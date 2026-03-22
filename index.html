@@ -584,7 +584,10 @@ jan    | 2026 | 2026-01-10 | padaria         | alimentação        | cafeterias
 <div id="sec-lanc" class="sec">
   <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:.25rem">
     <div><p class="stitle">Lançamentos</p><p class="ssub" style="margin:0">Registre receitas e despesas manualmente</p></div>
-    <button class="cfg-btn accent" onclick="openM('m-lanc-add')">+ Novo lançamento</button>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="cfg-btn" id="btn-cat-mgr">⚙ Categorias</button>
+      <button class="cfg-btn accent" onclick="openM('m-lanc-add')">+ Novo lançamento</button>
+    </div>
   </div>
 
   <!-- Summary strip -->
@@ -884,6 +887,48 @@ jan    | 2026 | 2026-01-10 | padaria         | alimentação        | cafeterias
   </div>
 </div>
 
+<!-- MODAL: Gerenciar Categorias -->
+<div class="moverlay" id="m-cat-mgr">
+  <div class="mdialog" style="max-width:580px">
+    <div class="mhdr">
+      <h3>Gerenciar Categorias</h3>
+      <button class="mclose" onclick="closeM('m-cat-mgr')">×</button>
+    </div>
+    <div class="mbody">
+      <!-- Add new category form -->
+      <div style="background:var(--bg3);border:1px solid var(--border2);border-radius:12px;padding:1rem;margin-bottom:1.25rem">
+        <p style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.75rem">Nova categoria</p>
+        <div style="display:grid;grid-template-columns:1fr 100px 110px auto;gap:8px;align-items:end">
+          <div class="field" style="margin:0">
+            <label style="font-size:11px">Nome</label>
+            <input type="text" id="newcat-nome" placeholder="Ex: Pets, Academia...">
+          </div>
+          <div class="field" style="margin:0">
+            <label style="font-size:11px">Cor</label>
+            <input type="color" id="newcat-cor" value="#60a5fa" style="height:38px;padding:2px 4px;border-radius:9px;background:var(--bg3);border:1px solid var(--border2);cursor:pointer;width:100%">
+          </div>
+          <div class="field" style="margin:0">
+            <label style="font-size:11px">Tipo</label>
+            <select id="newcat-tipo">
+              <option value="desp">Despesa</option>
+              <option value="rec">Receita</option>
+              <option value="ambos">Ambos</option>
+            </select>
+          </div>
+          <button class="btn btn-p btn-sm" onclick="addCat()" style="height:38px;white-space:nowrap">+ Adicionar</button>
+        </div>
+      </div>
+
+      <!-- Existing categories list -->
+      <p style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.75rem">Categorias existentes</p>
+      <div id="cat-list"></div>
+    </div>
+    <div class="mfoot">
+      <button class="btn btn-g" onclick="closeM('m-cat-mgr')">Fechar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== MODAIS ===== -->
 
 <!-- Orçamentos -->
@@ -973,14 +1018,28 @@ const DEFAULT_STATE={
     {id:3,n:'Reserva de emergência R$5k',tipo:'acumular',alvo:5000,atual:500,prazo:'Dez/2026',cor:'#60a5fa'},
     {id:4,n:'Moradia ≤ 35% das despesas',tipo:'reduzir',alvo:35,atual:null,prazo:'Jun/2026',cor:'#a78bfa'},
   ],
-  metaSeq:5,trxExtra:[],trxSeq:1,investimentos:[],invSeq:1,importedRaw:null,dataSource:'empty'
+  metaSeq:5,trxExtra:[],trxSeq:1,investimentos:[],invSeq:1,importedRaw:null,dataSource:'empty',
+  cats:[
+    {id:1, nome:'Alimentação',      cor:'#f59e0b', tipo:'desp'},
+    {id:2, nome:'Compras e lazer',  cor:'#8b5cf6', tipo:'desp'},
+    {id:3, nome:'Educação',         cor:'#60a5fa', tipo:'desp'},
+    {id:4, nome:'Moradia',          cor:'#ef4444', tipo:'desp'},
+    {id:5, nome:'Saúde',            cor:'#34d399', tipo:'desp'},
+    {id:6, nome:'Transporte',       cor:'#f97316', tipo:'desp'},
+    {id:7, nome:'Empréstimos',      cor:'#dc2626', tipo:'desp'},
+    {id:8, nome:'Assinaturas',      cor:'#a78bfa', tipo:'desp'},
+    {id:9, nome:'Streaming',        cor:'#ec4899', tipo:'desp'},
+    {id:10,nome:'Outros',           cor:'#6b7a99', tipo:'ambos'},
+    {id:11,nome:'Renda',            cor:'#22c55e', tipo:'rec'},
+    {id:12,nome:'Transferências',   cor:'#94a3b8', tipo:'ambos'},
+  ], catSeq:13
 };
 function openDB(){return new Promise((res,rej)=>{if(_db){res(_db);return;}const r=indexedDB.open(DB_NAME,DB_VERSION);r.onupgradeneeded=e=>{if(!e.target.result.objectStoreNames.contains(STORE))e.target.result.createObjectStore(STORE);};r.onsuccess=e=>{_db=e.target.result;res(_db);};r.onerror=e=>rej(e.target.error);});}
 async function loadState(){try{const db=await openDB();const r=await new Promise((ok,err)=>{const q=db.transaction(STORE,'readonly').objectStore(STORE).get(STATE_KEY);q.onsuccess=()=>ok(q.result);q.onerror=()=>err(q.error);});return r||JSON.parse(JSON.stringify(DEFAULT_STATE));}catch(e){return JSON.parse(JSON.stringify(DEFAULT_STATE));}}
-async function saveState(){try{const db=await openDB();await new Promise((ok,err)=>{const r=db.transaction(STORE,'readwrite').objectStore(STORE).put({budgets,metas,metaSeq,trxExtra,trxSeq,investimentos,invSeq,importedRaw,dataSource},STATE_KEY);r.onsuccess=ok;r.onerror=()=>err(r.error);});showSaved();}catch(e){console.warn('IDB save error',e);}}
+async function saveState(){try{const db=await openDB();await new Promise((ok,err)=>{const r=db.transaction(STORE,'readwrite').objectStore(STORE).put({budgets,metas,metaSeq,trxExtra,trxSeq,investimentos,invSeq,cats,catSeq,importedRaw,dataSource},STATE_KEY);r.onsuccess=ok;r.onerror=()=>err(r.error);});showSaved();}catch(e){console.warn('IDB save error',e);}}
 function showSaved(){const el=document.getElementById('save-ind');if(!el)return;el.textContent='✓ Salvo';el.style.opacity='1';clearTimeout(el._t);el._t=setTimeout(()=>{el.style.opacity='0';},2500);}
-function exportJSON(){const b=new Blob([JSON.stringify({budgets,metas,trxExtra,investimentos,importedRaw,dataSource,at:new Date().toISOString()},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='odysseus_backup_'+new Date().toISOString().slice(0,10)+'.json';a.click();}
-function importJSON(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=async ev=>{try{const d=JSON.parse(ev.target.result);if(d.budgets)budgets=d.budgets;if(d.metas){metas=d.metas;metaSeq=Math.max(...metas.map(m=>m.id),0)+1;}if(d.trxExtra)trxExtra=d.trxExtra;if(d.investimentos){investimentos=d.investimentos;invSeq=Math.max(...investimentos.map(x=>x.id),0)+1;}if(d.importedRaw){importedRaw=d.importedRaw;dataSource=d.dataSource||'xlsx';}await saveState();initRAWWithExtras();renderSec(document.querySelector('.sec.on').id.replace('sec-',''));alert('Backup importado com sucesso!');}catch(err){alert('Erro: arquivo inválido.');}};r.readAsText(f);e.target.value='';}
+function exportJSON(){const b=new Blob([JSON.stringify({budgets,metas,trxExtra,investimentos,cats,importedRaw,dataSource,at:new Date().toISOString()},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='odysseus_backup_'+new Date().toISOString().slice(0,10)+'.json';a.click();}
+function importJSON(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=async ev=>{try{const d=JSON.parse(ev.target.result);if(d.budgets)budgets=d.budgets;if(d.metas){metas=d.metas;metaSeq=Math.max(...metas.map(m=>m.id),0)+1;}if(d.trxExtra)trxExtra=d.trxExtra;if(d.investimentos){investimentos=d.investimentos;invSeq=Math.max(...investimentos.map(x=>x.id),0)+1;}if(d.cats){cats=d.cats;catSeq=Math.max(...cats.map(x=>x.id),0)+1;}if(d.importedRaw){importedRaw=d.importedRaw;dataSource=d.dataSource||'xlsx';}await saveState();initRAWWithExtras();renderSec(document.querySelector('.sec.on').id.replace('sec-',''));alert('Backup importado com sucesso!');}catch(err){alert('Erro: arquivo inválido.');}};r.readAsText(f);e.target.value='';}
 function resetState(){openM('m-reset');}
 async function confirmReset(){closeM('m-reset');try{const db=await openDB();const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).delete(STATE_KEY);await new Promise(ok=>{tx.oncomplete=ok;});}catch(e){}location.reload();}
 
@@ -992,6 +1051,7 @@ let period='mes',curMes='',rangeFrom='',rangeTo='',compA='',compB='';
 let budgets=_s_init.budgets,metas=_s_init.metas,metaSeq=_s_init.metaSeq;
 let trxExtra=_s_init.trxExtra,trxSeq=_s_init.trxSeq;
 let investimentos=[],invSeq=1;
+let cats=_s_init.cats,catSeq=_s_init.catSeq||13;
 let importedRaw=null,dataSource='sample';
 const charts={};
 let RAW=[],MESES=[],LABELS=[];
@@ -999,8 +1059,15 @@ let RAW=[],MESES=[],LABELS=[];
 // ============================================================
 // UTILS
 // ============================================================
-const CC={'Alimentação':'#f59e0b','Compras e lazer':'#8b5cf6','Educação':'#60a5fa','Moradia':'#ef4444','Saúde':'#34d399','Streaming':'#ec4899','Transporte':'#f97316','Empréstimos':'#dc2626','Assinaturas':'#a78bfa','Outros':'#6b7a99','Renda':'#22c55e','Transferências':'#94a3b8'};
-const ALL_CATS=['Alimentação','Compras e lazer','Educação','Moradia','Saúde','Transporte','Empréstimos','Assinaturas','Streaming','Outros','Renda','Transferências'];
+// CC and ALL_CATS are now computed from cats state (dynamic)
+function getCC(){ const o={}; cats.forEach(c=>{o[c.nome]=c.cor;}); return o; }
+function getAllCats(tipo){ 
+  if(!tipo) return cats.map(c=>c.nome);
+  return cats.filter(c=>c.tipo===tipo||c.tipo==='ambos').map(c=>c.nome);
+}
+// Keep CC as a proxy-like shorthand used in chart rendering
+const CC = new Proxy({}, { get(_,k){ const c=cats.find(x=>x.nome===k); return c?c.cor:'#6b7a99'; } });
+const ALL_CATS = new Proxy([], { get(t,k){ if(k==='filter')return(fn)=>cats.filter(fn).map(c=>c.nome); if(k==='map')return(fn)=>cats.map(fn); if(k==='length')return cats.length; const i=parseInt(k); return isNaN(i)?undefined:cats[i]?.nome; } });
 function brl(v){return'R$ '+Math.abs(v).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function brlk(v){return v>=1000?'R$ '+Math.round(v/1000).toLocaleString('pt-BR')+'k':brl(v);}
 function pct(v){return v.toFixed(1).replace('.',',')+'%';}
@@ -1642,8 +1709,8 @@ function updateLancTipoUI(){
   const tipo = document.getElementById('lanc-tipo').value;
   const catEl = document.getElementById('lanc-cat');
   const cats = tipo==='rec'
-    ? ['Renda','Outros']
-    : ALL_CATS.filter(c=>c!=='Renda');
+    ? getAllCats('rec')
+    : getAllCats('desp');
   catEl.innerHTML = cats.map(c=>`<option value="${c}">${c}</option>`).join('');
 }
 
@@ -2043,6 +2110,124 @@ function renderInv(){
 
 document.getElementById('btn-inv-add').onclick = openNewInv;
 
+
+// ============================================================
+// CATEGORIAS
+// ============================================================
+
+function openCatMgr(){
+  renderCatList();
+  openM('m-cat-mgr');
+}
+
+function renderCatList(){
+  const tipo_labels = {desp:'Despesa', rec:'Receita', ambos:'Ambos'};
+  document.getElementById('cat-list').innerHTML = cats.map(cat=>`
+    <div class="bud-row" id="catrow-${cat.id}">
+      <input type="color" value="${cat.cor}" onchange="updateCatColor(${cat.id},this.value)"
+        style="width:28px;height:28px;padding:2px;border-radius:6px;background:var(--bg3);border:1px solid var(--border2);cursor:pointer;flex-shrink:0">
+      <input type="text" value="${cat.nome}" onchange="updateCatNome(${cat.id},this.value)"
+        style="flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;padding:5px 9px;color:var(--text);font-size:13px;outline:none;min-width:0">
+      <select onchange="updateCatTipo(${cat.id},this.value)"
+        style="width:95px;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;padding:5px 8px;color:var(--text);font-size:12px;outline:none;flex-shrink:0">
+        <option value="desp"  ${cat.tipo==='desp' ?'selected':''}>Despesa</option>
+        <option value="rec"   ${cat.tipo==='rec'  ?'selected':''}>Receita</option>
+        <option value="ambos" ${cat.tipo==='ambos'?'selected':''}>Ambos</option>
+      </select>
+      <button class="meta-del" onclick="deleteCat(${cat.id})" title="Remover categoria"
+        style="${cat.nome==='Outros'?'opacity:.3;pointer-events:none':''}">×</button>
+    </div>`).join('');
+}
+
+function addCat(){
+  const nome = document.getElementById('newcat-nome').value.trim();
+  const cor  = document.getElementById('newcat-cor').value;
+  const tipo = document.getElementById('newcat-tipo').value;
+  if(!nome){ alert('Digite um nome para a categoria.'); return; }
+  if(cats.find(c=>c.nome.toLowerCase()===nome.toLowerCase())){
+    alert('Já existe uma categoria com este nome.'); return;
+  }
+  cats.push({id:catSeq++, nome, cor, tipo});
+  saveState();
+  document.getElementById('newcat-nome').value = '';
+  renderCatList();
+  refreshCatDropdowns();
+}
+
+function updateCatNome(id, nome){
+  nome = nome.trim();
+  if(!nome) return;
+  if(cats.find(c=>c.id!==id && c.nome.toLowerCase()===nome.toLowerCase())){
+    alert('Já existe uma categoria com este nome.'); return;
+  }
+  // Also update name in existing trxExtra and importedRaw
+  const cat = cats.find(c=>c.id===id);
+  if(!cat) return;
+  const oldNome = cat.nome;
+  cat.nome = nome;
+  // Update trxExtra references
+  trxExtra.forEach(t=>{ if(t.cat===oldNome) t.cat=nome; });
+  // Update importedRaw references
+  if(importedRaw) importedRaw.forEach(row=>{
+    if(row.cat && row.cat[oldNome]!==undefined){ row.cat[nome]=row.cat[oldNome]; delete row.cat[oldNome]; }
+    if(row.trx) row.trx.forEach(t=>{ if(t.c===oldNome) t.c=nome; });
+  });
+  saveState();
+  renderCatList();
+  refreshCatDropdowns();
+  // Rebuild budgets key if renamed
+  if(budgets[oldNome]!==undefined){ budgets[nome]=budgets[oldNome]; delete budgets[oldNome]; }
+}
+
+function updateCatCor(id, cor){
+  const cat = cats.find(c=>c.id===id);
+  if(cat){ cat.cor=cor; saveState(); }
+}
+
+function updateCatTipo(id, tipo){
+  const cat = cats.find(c=>c.id===id);
+  if(cat){ cat.tipo=tipo; saveState(); renderCatList(); }
+}
+
+function updateCatColor(id, cor){
+  const cat = cats.find(c=>c.id===id);
+  if(cat){ cat.cor=cor; saveState(); }
+}
+
+function deleteCat(id){
+  const cat = cats.find(c=>c.id===id);
+  if(!cat||cat.nome==='Outros') return;
+  const inUse = trxExtra.some(t=>t.cat===cat.nome) ||
+    (importedRaw||[]).some(row=>(row.cat||{})[cat.nome]>0);
+  if(inUse && !confirm(`A categoria "${cat.nome}" está em uso em lançamentos existentes. Ao excluir, eles serão movidos para "Outros". Continuar?`)) return;
+  // Migrate to Outros
+  trxExtra.forEach(t=>{ if(t.cat===cat.nome) t.cat='Outros'; });
+  if(importedRaw) importedRaw.forEach(row=>{
+    if(row.cat && row.cat[cat.nome]!==undefined){ row.cat['Outros']=(row.cat['Outros']||0)+row.cat[cat.nome]; delete row.cat[cat.nome]; }
+    if(row.trx) row.trx.forEach(t=>{ if(t.c===cat.nome) t.c='Outros'; });
+  });
+  if(budgets[cat.nome]!==undefined) delete budgets[cat.nome];
+  cats = cats.filter(c=>c.id!==id);
+  saveState();
+  renderCatList();
+  refreshCatDropdowns();
+  initRAWWithExtras();
+}
+
+function refreshCatDropdowns(){
+  // Refresh OFX classify rows if visible
+  if(_pendingOFX && _pendingOFX.length) renderOFXRows();
+  // Refresh budget modal if open
+  if(document.getElementById('m-budget').classList.contains('open')) openBudgetM();
+  // Refresh lanc modal categoria select if open
+  if(document.getElementById('m-lanc-add').classList.contains('open')) updateLancTipoUI();
+  // Re-render active section charts
+  const active = document.querySelector('.sec.on');
+  if(active) renderSec(active.id.replace('sec-',''));
+}
+
+document.getElementById('btn-cat-mgr').onclick = openCatMgr;
+
 // ============================================================
 // CLOSE MODALS ON OVERLAY CLICK
 // ============================================================
@@ -2060,6 +2245,8 @@ document.querySelectorAll('.moverlay').forEach(o=>o.addEventListener('click',fun
   trxSeq      =saved.trxSeq      ||1;
   investimentos=saved.investimentos||[];
   invSeq      =saved.invSeq      ||1;
+  cats        =saved.cats        ||DEFAULT_STATE.cats;
+  catSeq      =saved.catSeq      ||DEFAULT_STATE.catSeq||13;
   importedRaw =saved.importedRaw ||null;
   dataSource =saved.dataSource ||'sample';
   initRAWWithExtras();
