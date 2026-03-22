@@ -63,7 +63,7 @@ body{font-family:'Sora',sans-serif;background:var(--bg);color:var(--text);font-s
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem}
 .g3{display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;margin-bottom:1rem}
 .g4{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1rem}
-@media(max-width:760px){.g2,.g3,.g4{grid-template-columns:1fr}.main,.hdr,.nav{padding-left:1rem;padding-right:1rem}}
+@media(max-width:760px){.g2,.g3,.g4{grid-template-columns:1fr}.main,.hdr,.nav{padding-left:1rem;padding-right:1rem}[style*="grid-template-columns:repeat(5"]{grid-template-columns:repeat(2,1fr)!important}}
 
 /* CARD */
 .card{background:var(--bg2);border:1px solid var(--border);border-radius:14px;padding:1.25rem 1.5rem;margin-bottom:1rem}
@@ -315,11 +315,24 @@ td.nm{color:var(--text)}
     <span id="datasrc-badge" class="src-badge sample">● dados de exemplo</span>
   </div>
   <p class="ssub">Resumo executivo · clique nos gráficos para detalhar</p>
-  <div class="g4">
+  <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:1rem;margin-bottom:1rem">
     <div class="kpi g"><div class="kl">Receita</div><div class="kv gc" id="v-rec">—</div><div class="ks" id="v-rec-s">—</div></div>
     <div class="kpi r"><div class="kl">Despesa</div><div class="kv rc" id="v-desp">—</div><div class="ks" id="v-desp-s">—</div></div>
     <div class="kpi b"><div class="kl">Resultado</div><div class="kv" id="v-res">—</div><div class="ks" id="v-res-s">—</div></div>
     <div class="kpi n"><div class="kl">Poupança</div><div class="kv" id="v-poup">—</div><div class="ks" id="v-poup-s">—</div></div>
+    <div class="kpi y" style="cursor:pointer" onclick="toggleSaldoDetail()" title="Clique para detalhar">
+      <div class="kl">Saldo acumulado</div>
+      <div class="kv yc" id="v-saldo">—</div>
+      <div class="ks" id="v-saldo-s">—</div>
+    </div>
+  </div>
+  <!-- Saldo detail panel -->
+  <div id="saldo-detail" style="display:none;background:var(--bg2);border:1px solid rgba(245,158,11,.2);border-radius:14px;padding:1.25rem 1.5rem;margin-bottom:1rem">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+      <span style="font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:500">Composição do saldo acumulado</span>
+      <button onclick="toggleSaldoDetail()" style="background:none;border:none;cursor:pointer;color:var(--muted);font-size:18px;line-height:1">×</button>
+    </div>
+    <div id="saldo-detail-body"></div>
   </div>
   <div class="g2">
     <div class="card">
@@ -361,7 +374,13 @@ td.nm{color:var(--text)}
 <div id="sec-desp" class="sec">
   <p class="stitle">Despesas</p><p class="ssub">Evolução por categoria · clique para detalhar transações</p>
   <div class="card">
-    <div class="card-title">Evolução por categoria — clique no ponto</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;flex-wrap:wrap;gap:8px">
+      <div class="card-title" style="margin:0" id="desp-evo-title">Receitas vs Despesas por mês</div>
+      <div style="display:flex;gap:4px;background:var(--bg3);border-radius:9px;padding:3px;border:1px solid var(--border)">
+        <button class="pfbtn on" id="desp-toggle-rv" onclick="setDespView('rv',this)">Rec vs Desp</button>
+        <button class="pfbtn"    id="desp-toggle-cat" onclick="setDespView('cat',this)">Por categoria</button>
+      </div>
+    </div>
     <div class="leg" id="desp-leg"></div>
     <div class="ch" style="height:250px"><canvas id="ch-desp-evo"></canvas></div>
     <div class="dpanel" id="dp-desp"><button class="dback" onclick="closeDp('dp-desp')">← voltar</button><div class="dpanel-t" id="dp-desp-t"></div><div id="dp-desp-b"></div></div>
@@ -1246,6 +1265,11 @@ function renderComp(){
   document.getElementById('insights').innerHTML=`<div style="font-size:12px;color:var(--muted);margin-bottom:.75rem;text-transform:uppercase;letter-spacing:.06em">Comparativo ${labelA} vs ${labelB}</div>`+ins.map(i=>`<div class="ins ${i.t}"><span class="ico">${i.t==='ok'?'✓':'⚠'}</span><span class="msg">${i.m}</span></div>`).join('');
 }
 
+
+function toggleSaldoDetail(){
+  const el = document.getElementById('saldo-detail');
+  el.style.display = el.style.display==='none' ? 'block' : 'none';
+}
 function renderVisao(){
   if(!RAW.length){
     document.getElementById('v-rec').textContent='—';
@@ -1271,6 +1295,28 @@ function renderVisao(){
   document.getElementById('v-res-s').textContent=res>=0?'Superávit':'Déficit';document.getElementById('v-res-s').className='ks '+(res>=0?'ok':'bad');
   const pe=document.getElementById('v-poup');pe.textContent=pct(pp);pe.className='kv '+(pp>=25?'gc':pp>=10?'yc':'rc');
   document.getElementById('v-poup-s').textContent=pp>=25?'Acima da meta (25%)':pp>=10?'Abaixo da meta':'Crítico';document.getElementById('v-poup-s').className='ks '+(pp>=25?'ok':pp>=10?'warn':'bad');
+  // Saldo acumulado = soma de todos os resultados do período completo (não só rows filtradas)
+  const saldoRows = RAW;
+  const saldoTotal = saldoRows.reduce((s,x)=>s+(x.r-x.d),0);
+  const saldoInvest = investimentos.reduce((s,x)=>s+x.atual,0);
+  const saldoPatrim = saldoTotal + saldoInvest;
+  const sv = document.getElementById('v-saldo');
+  sv.textContent = brl(saldoTotal);
+  sv.className = 'kv '+(saldoTotal>=0?'yc':'rc');
+  document.getElementById('v-saldo-s').textContent = 'Caixa · +'+brl(saldoInvest)+' invest.';
+  // Saldo detail body
+  const allRes = saldoRows.reduce((s,x)=>s+(x.r-x.d),0);
+  const monthRows = saldoRows.map(x=>{const res=x.r-x.d;return`<div class="brow" style="margin-bottom:6px"><span class="bl" style="width:70px">${x.l}</span><div class="bbg"><div class="bf" style="width:${Math.min(100,Math.abs(res)/Math.max(...saldoRows.map(r=>Math.abs(r.r-r.d)),1)*100)}%;background:${res>=0?'#f59e0b':'#ef4444'}"></div></div><span class="bval" style="color:${res>=0?'#f59e0b':'#ef4444'};width:90px">${res>=0?'+':''}${brl(res)}</span></div>`;}).join('');
+  document.getElementById('saldo-detail-body').innerHTML=
+    `<div class="g2" style="margin-bottom:1rem">
+      <div class="kpi n" style="padding:.75rem"><div class="kl">Fluxo de caixa (período)</div><div class="kv ${saldoTotal>=0?'yc':'rc'}" style="font-size:1.2rem">${saldoTotal>=0?'+':''}${brl(saldoTotal)}</div></div>
+      <div class="kpi b" style="padding:.75rem"><div class="kl">Patrimônio investido</div><div class="kv bc" style="font-size:1.2rem">${brl(saldoInvest)}</div></div>
+    </div>
+    <div style="margin-bottom:.5rem;font-size:12px;color:var(--muted)">Resultado por mês</div>`+monthRows+
+    `<div style="border-top:1px solid var(--border);margin-top:.75rem;padding-top:.75rem;display:flex;justify-content:space-between;font-size:13px">
+      <span style="color:var(--muted2)">Patrimônio total estimado</span>
+      <span style="font-family:'DM Mono',monospace;font-weight:600;color:#f59e0b">${brl(saldoPatrim)}</span>
+    </div>`;
 
   mk('ch-vbar',{type:'bar',data:{labels:LABELS,datasets:[{label:'Receita',data:RAW.map(x=>x.r),backgroundColor:'rgba(34,197,94,.7)',borderRadius:5},{label:'Despesa',data:RAW.map(x=>x.d),backgroundColor:'rgba(239,68,68,.7)',borderRadius:5}]},options:{responsive:true,maintainAspectRatio:false,onClick:(e,els)=>{if(!els.length)return;const row=RAW[els[0].index];const res2=row.r-row.d;openDp('dp-vbar','dp-vbar-t','dp-vbar-b',row.l+' — Detalhe',`<div class="g2" style="margin-bottom:1rem"><div class="kpi g" style="padding:.75rem"><div class="kl">Receita</div><div class="kv gc" style="font-size:1.1rem">${brl(row.r)}</div></div><div class="kpi r" style="padding:.75rem"><div class="kl">Despesa</div><div class="kv rc" style="font-size:1.1rem">${brl(row.d)}</div></div></div><div class="ins ${res2>=0?'ok':'bad'}" style="margin-bottom:1rem"><span class="ico">${res2>=0?'✓':'✕'}</span><span class="msg"><strong>Resultado: ${res2>=0?'+':''}${brl(res2)}</strong></span></div>`+trxTable(row.trx));},plugins:{legend:{labels:{color:'#9aa5bf',boxWidth:10,font:{size:12}}}},scales:{x:{ticks:{color:'#6b7a99'},grid:{color:'rgba(255,255,255,.04)'}},y:{ticks:{color:'#6b7a99',callback:v=>brlk(v)},grid:{color:'rgba(255,255,255,.04)'}}}}});
 
@@ -1316,11 +1362,76 @@ document.getElementById('btn-orc-cfg').onclick=openBudgetM;
 // ============================================================
 // DESPESAS
 // ============================================================
+let _despView = 'rv'; // 'rv' = receita vs despesa, 'cat' = por categoria
+
+function setDespView(view, btn){
+  _despView = view;
+  document.querySelectorAll('#desp-toggle-rv, #desp-toggle-cat').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  renderDespEvo();
+}
+
+function renderDespEvo(){
+  const legEl   = document.getElementById('desp-leg');
+  const titleEl = document.getElementById('desp-evo-title');
+
+  if(_despView === 'rv'){
+    // Receitas vs Despesas por mês — two lines
+    titleEl.textContent = 'Receitas vs Despesas por mês';
+    legEl.innerHTML = `
+      <span><span class="ldot" style="background:#22c55e"></span>Receita</span>
+      <span><span class="ldot" style="background:#ef4444"></span>Despesa</span>`;
+    const evo = mk('ch-desp-evo',{type:'bar',data:{labels:LABELS,datasets:[
+      {label:'Receita', data:RAW.map(x=>x.r), backgroundColor:'rgba(34,197,94,.7)', borderRadius:4},
+      {label:'Despesa', data:RAW.map(x=>x.d), backgroundColor:'rgba(239,68,68,.7)',  borderRadius:4},
+    ]},options:{responsive:true,maintainAspectRatio:false,
+      onClick:(e,els)=>{
+        if(!els.length)return;
+        const row=RAW[els[0].index];
+        const isRec=els[0].datasetIndex===0;
+        const trxs=(row.trx||[]).filter(t=>isRec?t.v>0:t.v<0);
+        openDp('dp-desp','dp-desp-t','dp-desp-b',
+          (isRec?'Receitas':'Despesas')+' — '+row.l,
+          `<div class="g2" style="margin-bottom:1rem">
+            <div class="kpi g" style="padding:.75rem"><div class="kl">Receita</div><div class="kv gc" style="font-size:1.1rem">${brl(row.r)}</div></div>
+            <div class="kpi r" style="padding:.75rem"><div class="kl">Despesa</div><div class="kv rc" style="font-size:1.1rem">${brl(row.d)}</div></div>
+          </div>`+trxTable(trxs));
+      },
+      plugins:{legend:{labels:{boxWidth:10}}},
+      scales:{
+        x:{ticks:{color:'#6b7a99'},grid:{color:'rgba(255,255,255,.04)'}},
+        y:{ticks:{color:'#6b7a99',callback:v=>brlk(v)},grid:{color:'rgba(255,255,255,.04)'}}
+      }}});
+  } else {
+    // Por categoria
+    titleEl.textContent = 'Evolução por categoria — clique no ponto';
+    const allCats=[...new Set(RAW.flatMap(x=>Object.keys(x.cat)))];
+    legEl.innerHTML=allCats.map(c=>`<span><span class="ldot" style="background:${CC[c]||'#6b7a99'}"></span>${c}</span>`).join('');
+    const evo=mk('ch-desp-evo',{type:'line',data:{labels:LABELS,datasets:allCats.map(cat=>({
+      label:cat,data:RAW.map(x=>x.cat[cat]||0),
+      borderColor:CC[cat]||'#6b7a99',backgroundColor:(CC[cat]||'#6b7a99')+'22',
+      tension:.3,pointRadius:4,fill:false
+    }))},options:{responsive:true,maintainAspectRatio:false,
+      onClick:(e,els)=>{
+        if(!els.length)return;
+        const cat=evo.data.datasets[els[0].datasetIndex].label;
+        const row=RAW[els[0].index];
+        const val=row.cat[cat]||0;
+        openDp('dp-desp','dp-desp-t','dp-desp-b',cat+' — '+row.l,
+          `<p style="font-size:13px;margin-bottom:1rem;color:var(--muted2)">Total em <strong>${cat}</strong>: <strong style="color:#ef4444">${brl(val)}</strong></p>`+
+          trxTable((row.trx||[]).filter(t=>t.c===cat&&t.v<0)));
+      },
+      plugins:{legend:{labels:{boxWidth:10,font:{size:11}}}},
+      scales:{
+        x:{ticks:{color:'#6b7a99'},grid:{color:'rgba(255,255,255,.04)'}},
+        y:{ticks:{color:'#6b7a99',callback:v=>brlk(v)},grid:{color:'rgba(255,255,255,.04)'}}
+      }}});
+  }
+}
+
 function renderDesp(){
   if(!RAW.length)return;
-  const allCats=[...new Set(RAW.flatMap(x=>Object.keys(x.cat)))];
-  document.getElementById('desp-leg').innerHTML=allCats.map(c=>`<span><span class="ldot" style="background:${CC[c]||'#6b7a99'}"></span>${c}</span>`).join('');
-  const evo=mk('ch-desp-evo',{type:'line',data:{labels:LABELS,datasets:allCats.map(cat=>({label:cat,data:RAW.map(x=>x.cat[cat]||0),borderColor:CC[cat]||'#6b7a99',backgroundColor:(CC[cat]||'#6b7a99')+'22',tension:.3,pointRadius:4,fill:false}))},options:{responsive:true,maintainAspectRatio:false,onClick:(e,els)=>{if(!els.length)return;const cat=evo.data.datasets[els[0].datasetIndex].label;const row=RAW[els[0].index];const val=row.cat[cat]||0;openDp('dp-desp','dp-desp-t','dp-desp-b',cat+' — '+row.l,`<p style="font-size:13px;margin-bottom:1rem;color:var(--muted2)">Total em <strong>${cat}</strong>: <strong style="color:#ef4444">${brl(val)}</strong></p>`+trxTable((row.trx||[]).filter(t=>t.c===cat&&t.v<0)));},plugins:{legend:{labels:{color:'#9aa5bf',boxWidth:10,font:{size:11}}}},scales:{x:{ticks:{color:'#6b7a99'},grid:{color:'rgba(255,255,255,.04)'}},y:{ticks:{color:'#6b7a99',callback:v=>brlk(v)},grid:{color:'rgba(255,255,255,.04)'}}}}});
+  renderDespEvo();
   const rank={};RAW.forEach(x=>Object.entries(x.cat).forEach(([k,v])=>{rank[k]=(rank[k]||0)+v;}));
   const sorted=Object.entries(rank).sort((a,b)=>b[1]-a[1]);const maxV=sorted[0]?.[1]||1;
   document.getElementById('desp-rank').innerHTML=sorted.map(([cat,val])=>`<div class="brow"><span class="bl">${cat}</span><div class="bbg"><div class="bf" style="width:${Math.round(val/maxV*100)}%;background:${CC[cat]||'#6b7a99'}"></div></div><span class="bval">${brl(val)}</span></div>`).join('');
