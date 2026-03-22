@@ -1129,12 +1129,10 @@ jan    | 2026 | 2026-01-10 | padaria         | alimentação        | cafeterias
         <label>Modelo</label>
         <select id="ai-model-select">
           <option value="gemini-2.0-flash">Gemini 2.0 Flash (recomendado)</option>
-          <option value="gemini-1.5-flash">Gemini 1.5 Flash (cota separada)</option>
-          <option value="gemini-1.5-flash-8b">Gemini 1.5 Flash 8B (mais leve)</option>
-          <option value="gemini-1.5-pro">Gemini 1.5 Pro (mais capaz, mais lento)</option>
-          <option value="gemini-2.0-flash-lite">Gemini 2.0 Flash Lite (mais rápido)</option>
+          <option value="gemini-2.0-flash-lite">Gemini 2.0 Flash Lite (mais rápido, mais cota)</option>
+          <option value="gemini-2.5-flash-preview-05-20">Gemini 2.5 Flash Preview (mais inteligente)</option>
         </select>
-        <div style="font-size:11px;color:var(--muted);margin-top:5px">Cada modelo tem cota independente. Se um estiver esgotado, tente outro.</div>
+        <div style="font-size:11px;color:var(--muted);margin-top:5px">Se um modelo estiver com cota esgotada, troque para outro. O 2.0 Flash Lite tem limite mais generoso.</div>
       </div>
 
       <div style="border-top:1px solid var(--border);padding-top:1rem;margin-top:.25rem">
