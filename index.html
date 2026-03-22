@@ -425,7 +425,13 @@ td.nm{color:var(--text)}
       <button class="cfg-btn accent" id="btn-meta-add">+ Nova meta</button>
     </div>
   </div>
-  <div class="card" style="margin-top:1rem"><div class="card-title">Progresso das metas</div><div id="metas-prog"></div></div>
+  <div class="card" style="margin-top:1rem">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem">
+      <div class="card-title" style="margin:0">Progresso das metas</div>
+      <span style="font-size:12px;color:var(--muted)">Clique em uma meta para atualizar</span>
+    </div>
+    <div id="metas-prog"></div>
+  </div>
   <div class="card">
     <div class="card-title">Simulador de crescimento patrimonial (24 meses)</div>
     <div class="simrow"><label>Aporte mensal (R$)</label><input type="range" min="100" max="3000" step="50" value="400" id="sim-ap" oninput="simUpd()"><span class="simval" id="sim-apv">R$ 400</span></div>
@@ -947,6 +953,76 @@ jan    | 2026 | 2026-01-10 | padaria         | alimentação        | cafeterias
     </div>
     <div class="mfoot">
       <button class="btn btn-g" onclick="closeM('m-cat-mgr')">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Atualizar meta -->
+<div class="moverlay" id="m-meta-update">
+  <div class="mdialog" style="max-width:460px">
+    <div class="mhdr">
+      <h3 id="m-meta-update-title">Atualizar meta</h3>
+      <button class="mclose" onclick="closeM('m-meta-update')">×</button>
+    </div>
+    <div class="mbody">
+      <input type="hidden" id="mu-id">
+
+      <!-- Auto-calc badge shown for poupar/reduzir -->
+      <div id="mu-auto-info" style="display:none">
+        <div class="ins info" style="margin-bottom:1rem">
+          <span class="ico">ℹ</span>
+          <span class="msg" id="mu-auto-msg"></span>
+        </div>
+      </div>
+
+      <!-- Manual value for acumular -->
+      <div id="mu-manual" style="display:none">
+        <div class="field">
+          <label>Valor atual (R$)</label>
+          <input type="number" id="mu-atual" min="0" step="0.01" placeholder="0,00" oninput="liveMetaPreview()">
+        </div>
+        <div class="field">
+          <label>Valor alvo (R$)</label>
+          <input type="number" id="mu-alvo" min="0" step="0.01" placeholder="0,00" oninput="liveMetaPreview()">
+        </div>
+        <!-- Quick add buttons -->
+        <div style="margin-bottom:1rem">
+          <p style="font-size:12px;color:var(--muted);margin-bottom:.5rem">Adicionar ao valor atual:</p>
+          <div style="display:flex;gap:6px;flex-wrap:wrap">
+            <button class="btn btn-g btn-sm" onclick="addToMeta(100)">+R$ 100</button>
+            <button class="btn btn-g btn-sm" onclick="addToMeta(500)">+R$ 500</button>
+            <button class="btn btn-g btn-sm" onclick="addToMeta(1000)">+R$ 1.000</button>
+            <button class="btn btn-g btn-sm" onclick="addToMeta(5000)">+R$ 5.000</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Common fields -->
+      <div class="frow">
+        <div class="field">
+          <label>Prazo</label>
+          <input type="text" id="mu-prazo" placeholder="Ex: Dez/2026">
+        </div>
+        <div class="field">
+          <label>Cor</label>
+          <input type="color" id="mu-cor" style="height:38px;padding:2px 4px;border-radius:9px;background:var(--bg3);border:1px solid var(--border2);cursor:pointer;width:100%">
+        </div>
+      </div>
+
+      <!-- Progress preview -->
+      <div id="mu-preview" style="margin-top:.5rem">
+        <div class="prow" style="margin:0">
+          <div class="pmeta">
+            <span class="pname" id="mu-preview-name"></span>
+            <span class="ppct" id="mu-preview-pct"></span>
+          </div>
+          <div class="ptrack"><div class="pfill" id="mu-preview-bar" style="width:0%"></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="mfoot">
+      <button class="btn btn-g" onclick="closeM('m-meta-update')">Cancelar</button>
+      <button class="btn btn-p" onclick="saveMetaUpdate()">Salvar</button>
     </div>
   </div>
 </div>
@@ -1486,10 +1562,40 @@ function renderRec(){
 // ============================================================
 // METAS
 // ============================================================
-function renderMetas(){
+function calcMetaPv(m){
   const tR=RAW.reduce((s,x)=>s+x.r,0),tD=RAW.reduce((s,x)=>s+x.d,0),tRes=tR-tD,pp=tR>0?(tRes/tR*100):0;
   let morT=0;RAW.forEach(x=>{morT+=(x.cat['Moradia']||0);});const morPct=tD>0?(morT/tD*100):0;
-  document.getElementById('metas-prog').innerHTML=metas.length?metas.map(m=>{let pv;if(m.tipo==='poupar')pv=Math.min(100,Math.round(pp/m.alvo*100));else if(m.tipo==='reduzir')pv=Math.min(100,Math.max(0,Math.round(((m.alvo-(morPct-m.alvo))/m.alvo)*100)));else pv=Math.min(100,Math.round((m.atual||0)/m.alvo*100));const col=pv>=75?'#22c55e':pv>=40?'#f59e0b':'#ef4444';return`<div class="prow"><div class="pmeta"><span class="pname">${m.n} <span style="font-size:11px;color:var(--muted)">· prazo: ${m.prazo}</span></span><span class="ppct" style="color:${col}">${pv}%</span></div><div class="ptrack"><div class="pfill" style="width:${pv}%;background:${m.cor}"></div></div></div>`;}).join(''):'<p style="color:var(--muted);font-size:13px;padding:.5rem 0">Nenhuma meta. Clique em "+ Nova meta" para começar.</p>';
+  if(m.tipo==='poupar') return {pv:Math.min(100,Math.round(pp/m.alvo*100)), cur:pp, unit:'%', auto:true, desc:`Taxa de poupança atual: ${pp.toFixed(1)}% de ${m.alvo}% meta`};
+  if(m.tipo==='reduzir') return {pv:Math.min(100,Math.max(0,Math.round(((m.alvo-(morPct-m.alvo))/m.alvo)*100))), cur:morPct, unit:'%', auto:true, desc:`Moradia atual: ${morPct.toFixed(1)}% das despesas. Meta: abaixo de ${m.alvo}%`};
+  const cur=m.atual||0;
+  return {pv:Math.min(100,Math.round(cur/m.alvo*100)), cur, unit:'R$', auto:false, desc:`${brl(cur)} de ${brl(m.alvo)}`};
+}
+
+function renderMetas(){
+  const container = document.getElementById('metas-prog');
+  if(!metas.length){
+    container.innerHTML='<p style="color:var(--muted);font-size:13px;padding:.5rem 0">Nenhuma meta. Clique em "+ Nova meta" para começar.</p>';
+    simUpd(); return;
+  }
+  container.innerHTML = metas.map(m=>{
+    const {pv,cur,unit,auto,desc} = calcMetaPv(m);
+    const col = pv>=75?'#22c55e':pv>=40?'#f59e0b':'#ef4444';
+    const faltaVal = m.tipo==='acumular' ? brl(Math.max(0,(m.alvo||0)-(m.atual||0)))+' restantes' : '';
+    const autoTag = auto ? '<span style="font-size:10px;background:var(--bdim);color:#93c5fd;border:1px solid rgba(96,165,250,.25);border-radius:10px;padding:1px 6px;margin-left:6px">auto</span>' : '';
+    return `<div onclick="openMetaUpdate(${m.id})" style="cursor:pointer;padding:.9rem 1rem;border-radius:10px;border:1px solid var(--border);background:var(--bg3);margin-bottom:8px;transition:border-color .2s" onmouseover="this.style.borderColor='${m.cor}40'" onmouseout="this.style.borderColor='rgba(255,255,255,0.07)'">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:.6rem;gap:8px">
+        <div>
+          <span style="font-size:13px;font-weight:500;color:var(--text)">${m.n}</span>${autoTag}
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">${desc} · prazo: ${m.prazo}</div>
+        </div>
+        <div style="text-align:right;flex-shrink:0">
+          <div style="font-size:1.1rem;font-weight:600;font-family:'DM Mono',monospace;color:${col}">${pv}%</div>
+          ${faltaVal?`<div style="font-size:11px;color:var(--muted)">${faltaVal}</div>`:''}
+        </div>
+      </div>
+      <div class="ptrack"><div class="pfill" style="width:${pv}%;background:${m.cor}"></div></div>
+    </div>`;
+  }).join('');
   simUpd();
 }
 function addMeta(){const n=document.getElementById('mn').value.trim();const a=parseFloat(document.getElementById('ma').value)||0;const c=parseFloat(document.getElementById('mc').value)||0;const p=document.getElementById('mp').value.trim()||'—';if(!n||!a){alert('Preencha nome e valor alvo.');return;}metas.push({id:metaSeq++,n,tipo:document.getElementById('mt').value,alvo:a,atual:c,prazo:p,cor:document.getElementById('mcor').value});saveState();closeM('m-meta-add');['mn','ma','mc','mp'].forEach(id=>document.getElementById(id).value='');renderMetas();}
@@ -2376,6 +2482,86 @@ function refreshCatDropdowns(){
 
 document.getElementById('btn-cat-mgr').onclick = openCatMgr;
 
+
+
+function liveMetaPreview(){
+  const id   = parseInt(document.getElementById('mu-id').value);
+  const m    = metas.find(x=>x.id===id);
+  if(!m) return;
+  const cur  = parseFloat(document.getElementById('mu-atual').value)||0;
+  const alvo = parseFloat(document.getElementById('mu-alvo').value)||m.alvo||1;
+  const pv   = Math.min(100,Math.round(cur/alvo*100));
+  const col  = pv>=75?'#22c55e':pv>=40?'#f59e0b':'#ef4444';
+  updateMuPreview({...m,cor:document.getElementById('mu-cor').value}, pv, col);
+}
+function openMetaUpdate(id){
+  const m = metas.find(x=>x.id===id);
+  if(!m) return;
+  const {pv,cur,unit,auto,desc} = calcMetaPv(m);
+  const col = pv>=75?'#22c55e':pv>=40?'#f59e0b':'#ef4444';
+
+  document.getElementById('mu-id').value = id;
+  document.getElementById('m-meta-update-title').textContent = m.n;
+  document.getElementById('mu-prazo').value = m.prazo||'';
+  document.getElementById('mu-cor').value   = m.cor||'#22c55e';
+
+  // Auto vs manual
+  const autoDiv   = document.getElementById('mu-auto-info');
+  const manualDiv = document.getElementById('mu-manual');
+  if(auto){
+    autoDiv.style.display   = 'block';
+    manualDiv.style.display = 'none';
+    document.getElementById('mu-auto-msg').innerHTML =
+      `<strong>Calculado automaticamente</strong> dos seus dados.<br>${desc}`;
+  } else {
+    autoDiv.style.display   = 'none';
+    manualDiv.style.display = 'block';
+    document.getElementById('mu-atual').value = m.atual||0;
+    document.getElementById('mu-alvo').value  = m.alvo||0;
+  }
+
+  // Preview
+  updateMuPreview(m, pv, col);
+  openM('m-meta-update');
+}
+
+function addToMeta(amount){
+  const val = parseFloat(document.getElementById('mu-atual').value)||0;
+  document.getElementById('mu-atual').value = val + amount;
+  // live preview
+  const id  = parseInt(document.getElementById('mu-id').value);
+  const m   = metas.find(x=>x.id===id);
+  if(!m) return;
+  const alvo = parseFloat(document.getElementById('mu-alvo').value)||m.alvo||1;
+  const cur  = val + amount;
+  const pv   = Math.min(100,Math.round(cur/alvo*100));
+  const col  = pv>=75?'#22c55e':pv>=40?'#f59e0b':'#ef4444';
+  updateMuPreview({...m, atual:cur, alvo}, pv, col);
+}
+
+function updateMuPreview(m, pv, col){
+  document.getElementById('mu-preview-name').textContent = m.n;
+  document.getElementById('mu-preview-pct').textContent  = pv+'%';
+  document.getElementById('mu-preview-pct').style.color  = col;
+  document.getElementById('mu-preview-bar').style.width  = pv+'%';
+  document.getElementById('mu-preview-bar').style.background = m.cor||col;
+}
+
+function saveMetaUpdate(){
+  const id    = parseInt(document.getElementById('mu-id').value);
+  const idx   = metas.findIndex(x=>x.id===id);
+  if(idx<0) return;
+  const m = metas[idx];
+  metas[idx].prazo = document.getElementById('mu-prazo').value.trim()||m.prazo;
+  metas[idx].cor   = document.getElementById('mu-cor').value;
+  if(m.tipo==='acumular'){
+    metas[idx].atual = parseFloat(document.getElementById('mu-atual').value)||0;
+    metas[idx].alvo  = parseFloat(document.getElementById('mu-alvo').value)||m.alvo;
+  }
+  saveState();
+  closeM('m-meta-update');
+  renderMetas();
+}
 // ============================================================
 // CLOSE MODALS ON OVERLAY CLICK
 // ============================================================
