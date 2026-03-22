@@ -301,6 +301,8 @@ td.nm{color:var(--text)}
   <button class="nb" onclick="showSec('rec',this)">Receitas</button>
   <button class="nb" onclick="showSec('metas',this)">Metas</button>
   <button class="nb" onclick="showSec('kpis',this)">KPIs</button>
+  <button class="nb" onclick="showSec('lanc',this)">✎ Lançamentos</button>
+  <button class="nb" onclick="showSec('inv',this)">◈ Investimentos</button>
   <button class="nb" id="nb-import" onclick="showSec('import',this)">⊕ Importar dados</button>
 </nav>
 
@@ -577,8 +579,310 @@ jan    | 2026 | 2026-01-10 | padaria         | alimentação        | cafeterias
 
 </div><!-- /sec-import -->
 
+
+<!-- ===== LANÇAMENTOS ===== -->
+<div id="sec-lanc" class="sec">
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:.25rem">
+    <div><p class="stitle">Lançamentos</p><p class="ssub" style="margin:0">Registre receitas e despesas manualmente</p></div>
+    <button class="cfg-btn accent" onclick="openM('m-lanc-add')">+ Novo lançamento</button>
+  </div>
+
+  <!-- Summary strip -->
+  <div class="g3" id="lanc-summary" style="margin-top:1rem"></div>
+
+  <!-- Filter bar -->
+  <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:1rem">
+    <select id="lanc-filter-mes" onchange="renderLanc()" style="padding:5px 10px;border-radius:8px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-size:13px;outline:none">
+      <option value="">Todos os meses</option>
+    </select>
+    <select id="lanc-filter-tipo" onchange="renderLanc()" style="padding:5px 10px;border-radius:8px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-size:13px;outline:none">
+      <option value="">Todos os tipos</option>
+      <option value="rec">Receitas</option>
+      <option value="desp">Despesas</option>
+    </select>
+    <select id="lanc-filter-cat" onchange="renderLanc()" style="padding:5px 10px;border-radius:8px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-size:13px;outline:none">
+      <option value="">Todas as categorias</option>
+    </select>
+    <span id="lanc-count" style="font-size:12px;color:var(--muted);margin-left:auto"></span>
+  </div>
+
+  <div class="card" style="padding:0;overflow:hidden">
+    <table id="lanc-table">
+      <thead>
+        <tr>
+          <th style="padding:10px 1.5rem">Data</th>
+          <th>Descrição</th>
+          <th>Categoria</th>
+          <th>Tipo</th>
+          <th>Valor</th>
+          <th style="width:80px"></th>
+        </tr>
+      </thead>
+      <tbody id="lanc-tbody"></tbody>
+    </table>
+    <div id="lanc-empty" style="padding:2rem;text-align:center;color:var(--muted);font-size:13px;display:none">
+      Nenhum lançamento ainda. Clique em "+ Novo lançamento" para começar.
+    </div>
+  </div>
+</div>
+
+
+<!-- ===== INVESTIMENTOS ===== -->
+<div id="sec-inv" class="sec">
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:.25rem">
+    <div><p class="stitle">Investimentos</p><p class="ssub" style="margin:0">Carteira, aportes e rentabilidade</p></div>
+    <button class="cfg-btn accent" id="btn-inv-add">+ Novo investimento</button>
+  </div>
+
+  <!-- KPI strip -->
+  <div class="g4" id="inv-kpis" style="margin-top:1rem"></div>
+
+  <!-- Charts row -->
+  <div class="g2">
+    <div class="card">
+      <div class="card-title">Distribuição da carteira</div>
+      <div class="leg" id="inv-leg"></div>
+      <div class="ch" style="height:220px"><canvas id="ch-inv-pie"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Evolução do patrimônio investido</div>
+      <div class="ch" style="height:220px"><canvas id="ch-inv-evo"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Positions table -->
+  <div class="card" style="padding:0;overflow:hidden">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:1rem 1.5rem .75rem">
+      <div class="card-title" style="margin:0">Posições</div>
+      <select id="inv-filter-classe" onchange="renderInv()" style="padding:4px 10px;border-radius:8px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-size:12px;outline:none">
+        <option value="">Todas as classes</option>
+      </select>
+    </div>
+    <table id="inv-table">
+      <thead><tr>
+        <th style="padding-left:1.5rem">Ativo</th>
+        <th>Classe</th>
+        <th>Valor investido</th>
+        <th>Valor atual</th>
+        <th>Rentab. total</th>
+        <th>% carteira</th>
+        <th style="width:80px"></th>
+      </tr></thead>
+      <tbody id="inv-tbody"></tbody>
+    </table>
+    <div id="inv-empty" style="padding:2rem;text-align:center;color:var(--muted);font-size:13px;display:none">
+      Nenhum investimento cadastrado ainda.
+    </div>
+  </div>
+
+  <!-- Aportes recentes -->
+  <div class="card" id="inv-aportes-card" style="display:none">
+    <div class="card-title">Histórico de aportes</div>
+    <table>
+      <thead><tr><th>Data</th><th>Ativo</th><th>Tipo</th><th>Valor</th><th>Obs.</th></tr></thead>
+      <tbody id="inv-aportes-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
 </div><!-- /main -->
 <div class="footer">Odysseus · Gestão Financeira Pessoal · IndexedDB</div>
+
+<!-- MODAL: Novo / Editar lançamento -->
+<div class="moverlay" id="m-lanc-add">
+  <div class="mdialog" style="max-width:480px">
+    <div class="mhdr">
+      <h3 id="m-lanc-title">Novo lançamento</h3>
+      <button class="mclose" onclick="closeM('m-lanc-add')">×</button>
+    </div>
+    <div class="mbody">
+      <input type="hidden" id="lanc-edit-id" value="">
+
+      <div class="frow">
+        <div class="field">
+          <label>Data</label>
+          <input type="date" id="lanc-data">
+        </div>
+        <div class="field">
+          <label>Tipo</label>
+          <select id="lanc-tipo" onchange="updateLancTipoUI()">
+            <option value="desp">Despesa</option>
+            <option value="rec">Receita</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Descrição</label>
+        <input type="text" id="lanc-desc" placeholder="Ex: Almoço, Salário, Uber...">
+      </div>
+
+      <div class="frow">
+        <div class="field">
+          <label>Categoria</label>
+          <select id="lanc-cat"></select>
+        </div>
+        <div class="field">
+          <label>Valor (R$)</label>
+          <input type="number" id="lanc-valor" min="0" step="0.01" placeholder="0,00">
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Observação (opcional)</label>
+        <input type="text" id="lanc-obs" placeholder="Nota adicional...">
+      </div>
+
+      <!-- Recurrence -->
+      <div class="field">
+        <label>Repetir</label>
+        <select id="lanc-rep">
+          <option value="none">Sem repetição</option>
+          <option value="monthly">Todo mês (recorrente)</option>
+        </select>
+      </div>
+    </div>
+    <div class="mfoot">
+      <button class="btn btn-g" onclick="closeM('m-lanc-add')">Cancelar</button>
+      <button class="btn btn-p" onclick="saveLanc()">Salvar lançamento</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Confirmar exclusão lançamento -->
+<div class="moverlay" id="m-lanc-del">
+  <div class="mdialog" style="max-width:380px">
+    <div class="mhdr"><h3 style="color:#f87171">Excluir lançamento</h3><button class="mclose" onclick="closeM('m-lanc-del')">×</button></div>
+    <div class="mbody">
+      <div class="ins bad"><span class="ico">✕</span><span class="msg">Tem certeza que deseja excluir este lançamento? Esta ação não pode ser desfeita.</span></div>
+      <p id="lanc-del-desc" style="margin-top:1rem;font-size:13px;color:var(--muted2)"></p>
+    </div>
+    <div class="mfoot">
+      <button class="btn btn-g" onclick="closeM('m-lanc-del')">Cancelar</button>
+      <button class="btn" onclick="confirmDelLanc()" style="background:#7f1d1d;color:#fca5a5;border:1px solid rgba(239,68,68,.4)">Excluir</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Novo / Editar investimento -->
+<div class="moverlay" id="m-inv-add">
+  <div class="mdialog" style="max-width:520px">
+    <div class="mhdr">
+      <h3 id="m-inv-title">Novo investimento</h3>
+      <button class="mclose" onclick="closeM('m-inv-add')">×</button>
+    </div>
+    <div class="mbody">
+      <input type="hidden" id="inv-edit-id" value="">
+
+      <div class="frow">
+        <div class="field">
+          <label>Nome do ativo</label>
+          <input type="text" id="inv-nome" placeholder="Ex: Tesouro Selic 2029, PETR4, Bitcoin...">
+        </div>
+        <div class="field">
+          <label>Classe</label>
+          <select id="inv-classe">
+            <option value="Renda Fixa">Renda Fixa</option>
+            <option value="Renda Variável">Renda Variável</option>
+            <option value="FIIs">FIIs</option>
+            <option value="Cripto">Cripto</option>
+            <option value="Fundos">Fundos</option>
+            <option value="Exterior">Exterior</option>
+            <option value="Previdência">Previdência</option>
+            <option value="Outros">Outros</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="frow">
+        <div class="field">
+          <label>Valor investido (R$)</label>
+          <input type="number" id="inv-custo" min="0" step="0.01" placeholder="0,00">
+        </div>
+        <div class="field">
+          <label>Valor atual (R$)</label>
+          <input type="number" id="inv-atual" min="0" step="0.01" placeholder="0,00" oninput="calcInvRent()">
+        </div>
+      </div>
+
+      <div class="frow">
+        <div class="field">
+          <label>Data do 1° aporte</label>
+          <input type="date" id="inv-data">
+        </div>
+        <div class="field">
+          <label>Rentabilidade calculada</label>
+          <div id="inv-rent-preview" style="padding:9px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:9px;font-family:'DM Mono',monospace;font-size:14px;color:var(--muted)">—</div>
+        </div>
+      </div>
+
+      <div class="frow">
+        <div class="field">
+          <label>Benchmark</label>
+          <select id="inv-bench">
+            <option value="">Nenhum</option>
+            <option value="CDI">CDI</option>
+            <option value="IPCA">IPCA</option>
+            <option value="IBOV">IBOV</option>
+            <option value="S&P500">S&P 500</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Liquidez</label>
+          <select id="inv-liquidez">
+            <option value="Diária">Diária</option>
+            <option value="D+1">D+1</option>
+            <option value="D+30">D+30</option>
+            <option value="No vencimento">No vencimento</option>
+            <option value="Ilíquido">Ilíquido</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Observação</label>
+        <input type="text" id="inv-obs" placeholder="Corretora, vencimento, estratégia...">
+      </div>
+
+      <!-- Aporte adicional -->
+      <div style="border-top:1px solid var(--border);padding-top:1rem;margin-top:.5rem">
+        <p style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.75rem">Registrar aporte / resgate</p>
+        <div class="frow">
+          <div class="field">
+            <label>Tipo</label>
+            <select id="inv-ap-tipo">
+              <option value="aporte">Aporte</option>
+              <option value="resgate">Resgate</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Valor (R$)</label>
+            <input type="number" id="inv-ap-valor" min="0" step="0.01" placeholder="Deixe vazio para não registrar">
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="mfoot">
+      <button class="btn btn-g" onclick="closeM('m-inv-add')">Cancelar</button>
+      <button class="btn btn-p" onclick="saveInv()">Salvar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL: Confirmar exclusão investimento -->
+<div class="moverlay" id="m-inv-del">
+  <div class="mdialog" style="max-width:380px">
+    <div class="mhdr"><h3 style="color:#f87171">Excluir investimento</h3><button class="mclose" onclick="closeM('m-inv-del')">×</button></div>
+    <div class="mbody">
+      <div class="ins bad"><span class="ico">✕</span><span class="msg">Tem certeza? O histórico de aportes deste ativo também será removido.</span></div>
+      <p id="inv-del-desc" style="margin-top:1rem;font-size:13px;color:var(--muted2)"></p>
+    </div>
+    <div class="mfoot">
+      <button class="btn btn-g" onclick="closeM('m-inv-del')">Cancelar</button>
+      <button class="btn" onclick="confirmDelInv()" style="background:#7f1d1d;color:#fca5a5;border:1px solid rgba(239,68,68,.4)">Excluir</button>
+    </div>
+  </div>
+</div>
 
 <!-- ===== MODAIS ===== -->
 
@@ -669,14 +973,14 @@ const DEFAULT_STATE={
     {id:3,n:'Reserva de emergência R$5k',tipo:'acumular',alvo:5000,atual:500,prazo:'Dez/2026',cor:'#60a5fa'},
     {id:4,n:'Moradia ≤ 35% das despesas',tipo:'reduzir',alvo:35,atual:null,prazo:'Jun/2026',cor:'#a78bfa'},
   ],
-  metaSeq:5,trxExtra:[],trxSeq:1,importedRaw:null,dataSource:'empty'
+  metaSeq:5,trxExtra:[],trxSeq:1,investimentos:[],invSeq:1,importedRaw:null,dataSource:'empty'
 };
 function openDB(){return new Promise((res,rej)=>{if(_db){res(_db);return;}const r=indexedDB.open(DB_NAME,DB_VERSION);r.onupgradeneeded=e=>{if(!e.target.result.objectStoreNames.contains(STORE))e.target.result.createObjectStore(STORE);};r.onsuccess=e=>{_db=e.target.result;res(_db);};r.onerror=e=>rej(e.target.error);});}
 async function loadState(){try{const db=await openDB();const r=await new Promise((ok,err)=>{const q=db.transaction(STORE,'readonly').objectStore(STORE).get(STATE_KEY);q.onsuccess=()=>ok(q.result);q.onerror=()=>err(q.error);});return r||JSON.parse(JSON.stringify(DEFAULT_STATE));}catch(e){return JSON.parse(JSON.stringify(DEFAULT_STATE));}}
-async function saveState(){try{const db=await openDB();await new Promise((ok,err)=>{const r=db.transaction(STORE,'readwrite').objectStore(STORE).put({budgets,metas,metaSeq,trxExtra,trxSeq,importedRaw,dataSource},STATE_KEY);r.onsuccess=ok;r.onerror=()=>err(r.error);});showSaved();}catch(e){console.warn('IDB save error',e);}}
+async function saveState(){try{const db=await openDB();await new Promise((ok,err)=>{const r=db.transaction(STORE,'readwrite').objectStore(STORE).put({budgets,metas,metaSeq,trxExtra,trxSeq,investimentos,invSeq,importedRaw,dataSource},STATE_KEY);r.onsuccess=ok;r.onerror=()=>err(r.error);});showSaved();}catch(e){console.warn('IDB save error',e);}}
 function showSaved(){const el=document.getElementById('save-ind');if(!el)return;el.textContent='✓ Salvo';el.style.opacity='1';clearTimeout(el._t);el._t=setTimeout(()=>{el.style.opacity='0';},2500);}
-function exportJSON(){const b=new Blob([JSON.stringify({budgets,metas,trxExtra,importedRaw,dataSource,at:new Date().toISOString()},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='odysseus_backup_'+new Date().toISOString().slice(0,10)+'.json';a.click();}
-function importJSON(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=async ev=>{try{const d=JSON.parse(ev.target.result);if(d.budgets)budgets=d.budgets;if(d.metas){metas=d.metas;metaSeq=Math.max(...metas.map(m=>m.id),0)+1;}if(d.trxExtra)trxExtra=d.trxExtra;if(d.importedRaw){importedRaw=d.importedRaw;dataSource=d.dataSource||'xlsx';}await saveState();initRAW();renderSec(document.querySelector('.sec.on').id.replace('sec-',''));alert('Backup importado com sucesso!');}catch(err){alert('Erro: arquivo inválido.');}};r.readAsText(f);e.target.value='';}
+function exportJSON(){const b=new Blob([JSON.stringify({budgets,metas,trxExtra,investimentos,importedRaw,dataSource,at:new Date().toISOString()},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='odysseus_backup_'+new Date().toISOString().slice(0,10)+'.json';a.click();}
+function importJSON(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=async ev=>{try{const d=JSON.parse(ev.target.result);if(d.budgets)budgets=d.budgets;if(d.metas){metas=d.metas;metaSeq=Math.max(...metas.map(m=>m.id),0)+1;}if(d.trxExtra)trxExtra=d.trxExtra;if(d.investimentos){investimentos=d.investimentos;invSeq=Math.max(...investimentos.map(x=>x.id),0)+1;}if(d.importedRaw){importedRaw=d.importedRaw;dataSource=d.dataSource||'xlsx';}await saveState();initRAWWithExtras();renderSec(document.querySelector('.sec.on').id.replace('sec-',''));alert('Backup importado com sucesso!');}catch(err){alert('Erro: arquivo inválido.');}};r.readAsText(f);e.target.value='';}
 function resetState(){openM('m-reset');}
 async function confirmReset(){closeM('m-reset');try{const db=await openDB();const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).delete(STATE_KEY);await new Promise(ok=>{tx.oncomplete=ok;});}catch(e){}location.reload();}
 
@@ -687,6 +991,7 @@ const _s_init=JSON.parse(JSON.stringify(DEFAULT_STATE));
 let period='mes',curMes='',rangeFrom='',rangeTo='',compA='',compB='';
 let budgets=_s_init.budgets,metas=_s_init.metas,metaSeq=_s_init.metaSeq;
 let trxExtra=_s_init.trxExtra,trxSeq=_s_init.trxSeq;
+let investimentos=[],invSeq=1;
 let importedRaw=null,dataSource='sample';
 const charts={};
 let RAW=[],MESES=[],LABELS=[];
@@ -814,6 +1119,8 @@ function renderSec(id){
   else if(id==='rec')renderRec();
   else if(id==='metas')renderMetas();
   else if(id==='kpis')renderKPIs();
+  else if(id==='lanc')renderLanc();
+  else if(id==='inv')renderInv();
 }
 
 // ============================================================
@@ -1046,7 +1353,7 @@ function confirmExcelImport(){
   const parsed=parseGenericRows(_pendingExcel);
   if(!parsed||!parsed.length){alert('Não foi possível interpretar a planilha. Verifique se contém colunas de Data, Descrição, Categoria e Valor.');return;}
   importedRaw=parsed;dataSource='xlsx';
-  saveState();initRAW();
+  saveState();initRAWWithExtras();
   document.getElementById('excel-preview').style.display='none';
   alert('✓ '+parsed.length+' meses importados com sucesso!');
   showSec('visao',document.querySelector('.nb'));
@@ -1096,7 +1403,7 @@ function confirmGSheetsImport(){
   const parsed=parseGenericRows(_pendingGS);
   if(!parsed||!parsed.length){alert('Não foi possível interpretar os dados. Verifique o formato da planilha.');return;}
   importedRaw=parsed;dataSource='gsheets';
-  saveState();initRAW();
+  saveState();initRAWWithExtras();
   alert('✓ Google Sheets importado com sucesso!');
   showSec('visao',document.querySelector('.nb'));renderVisao();
 }
@@ -1185,7 +1492,7 @@ function confirmOFXImport(){
   // Merge into existing RAW or create new months
   const newRaw=mergeOFXIntoRAW(all);
   importedRaw=newRaw;dataSource='ofx';
-  saveState();initRAW();
+  saveState();initRAWWithExtras();
   document.getElementById('ofx-classify').style.display='none';
   alert('✓ '+all.length+' transações OFX importadas com sucesso!');
   showSec('visao',document.querySelector('.nb'));renderVisao();
@@ -1251,6 +1558,491 @@ function parseGenericRows(rows){
   return Object.values(monthMap).sort((a,b)=>a.m.localeCompare(b.m)).map(e=>({...e,r:Math.round(e.r*100)/100,d:Math.round(e.d*100)/100}));
 }
 
+
+// ============================================================
+// LANÇAMENTOS MANUAIS
+// ============================================================
+
+// Merge trxExtra into RAW structure so all charts reflect manual entries
+function buildRAWWithExtras(){
+  // Start from importedRaw base
+  const baseRaw = (importedRaw && importedRaw.length) ? JSON.parse(JSON.stringify(importedRaw)) : [];
+  const monthMap = {};
+  baseRaw.forEach(row => { monthMap[row.m] = JSON.parse(JSON.stringify(row)); });
+
+  trxExtra.forEach(t => {
+    if(!t.active) return; // soft-deleted
+    const mKey = t.mKey; // e.g. "2026-03"
+    const mLabel = t.mLabel; // e.g. "Mar/26"
+    if(!monthMap[mKey]){
+      monthMap[mKey] = {m:mKey, l:mLabel, r:0, d:0, cat:{}, trx:[]};
+    }
+    const row = monthMap[mKey];
+    const val = t.tipo === 'rec' ? Math.abs(t.valor) : -Math.abs(t.valor);
+    row.trx.push({t:t.desc+(t.obs?' ('+t.obs+')':''), c:t.cat, v:val, manual:true, id:t.id});
+    if(t.tipo === 'rec'){ row.r = Math.round((row.r + Math.abs(t.valor))*100)/100; }
+    else { row.d = Math.round((row.d + Math.abs(t.valor))*100)/100; const cat=t.cat; row.cat[cat]=Math.round(((row.cat[cat]||0)+Math.abs(t.valor))*100)/100; }
+  });
+
+  return sortRAW(Object.values(monthMap));
+}
+
+function initRAWWithExtras(){
+  const raw = buildRAWWithExtras();
+  RAW    = raw;
+  MESES  = RAW.map(x=>x.m);
+  LABELS = RAW.map(x=>x.l);
+  curMes = MESES.length ? MESES[MESES.length-1] : '';
+  rangeFrom = MESES.length ? MESES[0] : '';
+  rangeTo   = MESES.length ? MESES[MESES.length-1] : '';
+  compA  = MESES.length>1 ? MESES[MESES.length-2] : (MESES[0]||'');
+  compB  = MESES.length   ? MESES[MESES.length-1] : '';
+
+  const opts = RAW.map(x=>`<option value="${x.m}">${x.l}</option>`).join('');
+  ['mes-picker','range-from','range-to','comp-a','comp-b'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.innerHTML=opts;
+  });
+  const mpEl=document.getElementById('mes-picker');   if(mpEl) mpEl.value=curMes;
+  const rfEl=document.getElementById('range-from');   if(rfEl) rfEl.value=rangeFrom;
+  const rtEl=document.getElementById('range-to');     if(rtEl) rtEl.value=rangeTo;
+  const caEl=document.getElementById('comp-a');       if(caEl) caEl.value=compA;
+  const cbEl=document.getElementById('comp-b');       if(cbEl) cbEl.value=compB;
+
+  const metaEl=document.getElementById('hdr-meta');
+  if(metaEl){
+    if(RAW.length) metaEl.innerHTML=`${RAW[0].l} — ${RAW[RAW.length-1].l} &nbsp;<span id="save-ind"></span>`;
+    else metaEl.innerHTML='Nenhum dado importado &nbsp;<span id="save-ind"></span>';
+  }
+  const b=document.getElementById('datasrc-badge');
+  if(b){
+    if(!RAW.length){b.className='src-badge sample';b.textContent='● sem dados';}
+    else{b.className='src-badge '+dataSource;b.textContent='● '+({xlsx:'Excel importado',gsheets:'Google Sheets',ofx:'OFX importado'}[dataSource]||dataSource);}
+  }
+}
+
+// Date helpers
+function dateToMKey(dateStr){
+  // dateStr = "2026-03-15"
+  const parts = dateStr.split('-');
+  if(parts.length<2) return '';
+  return parts[0]+'-'+parts[1]; // "2026-03"
+}
+function mKeyToLabel(mKey){
+  const mNames=['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  const m = mKey.match(/^(\d{4})-(\d{2})$/);
+  if(!m) return mKey;
+  return mNames[parseInt(m[2])]+'/'+m[1].slice(2);
+}
+function todayISO(){
+  return new Date().toISOString().slice(0,10);
+}
+
+// Populate category dropdown based on tipo
+function updateLancTipoUI(){
+  const tipo = document.getElementById('lanc-tipo').value;
+  const catEl = document.getElementById('lanc-cat');
+  const cats = tipo==='rec'
+    ? ['Renda','Outros']
+    : ALL_CATS.filter(c=>c!=='Renda');
+  catEl.innerHTML = cats.map(c=>`<option value="${c}">${c}</option>`).join('');
+}
+
+// Open modal for new entry
+function openNewLanc(){
+  document.getElementById('lanc-edit-id').value = '';
+  document.getElementById('m-lanc-title').textContent = 'Novo lançamento';
+  document.getElementById('lanc-data').value = todayISO();
+  document.getElementById('lanc-tipo').value = 'desp';
+  document.getElementById('lanc-desc').value = '';
+  document.getElementById('lanc-obs').value  = '';
+  document.getElementById('lanc-valor').value = '';
+  document.getElementById('lanc-rep').value = 'none';
+  updateLancTipoUI();
+  openM('m-lanc-add');
+}
+
+// Open modal to edit existing entry
+function editLanc(id){
+  const t = trxExtra.find(x=>x.id===id);
+  if(!t) return;
+  document.getElementById('lanc-edit-id').value = id;
+  document.getElementById('m-lanc-title').textContent = 'Editar lançamento';
+  document.getElementById('lanc-data').value  = t.data;
+  document.getElementById('lanc-tipo').value  = t.tipo;
+  document.getElementById('lanc-desc').value  = t.desc;
+  document.getElementById('lanc-obs').value   = t.obs||'';
+  document.getElementById('lanc-valor').value = Math.abs(t.valor);
+  document.getElementById('lanc-rep').value   = t.rep||'none';
+  updateLancTipoUI();
+  document.getElementById('lanc-cat').value = t.cat;
+  openM('m-lanc-add');
+}
+
+// Save (create or update)
+function saveLanc(){
+  const editId = document.getElementById('lanc-edit-id').value;
+  const data   = document.getElementById('lanc-data').value;
+  const tipo   = document.getElementById('lanc-tipo').value;
+  const desc   = document.getElementById('lanc-desc').value.trim();
+  const cat    = document.getElementById('lanc-cat').value;
+  const valor  = parseFloat(document.getElementById('lanc-valor').value)||0;
+  const obs    = document.getElementById('lanc-obs').value.trim();
+  const rep    = document.getElementById('lanc-rep').value;
+
+  if(!data||!desc||!valor){alert('Preencha data, descrição e valor.');return;}
+
+  const mKey   = dateToMKey(data);
+  const mLabel = mKeyToLabel(mKey);
+
+  if(editId){
+    // Update existing
+    const idx = trxExtra.findIndex(x=>x.id===parseInt(editId));
+    if(idx>=0) trxExtra[idx] = {...trxExtra[idx], data, tipo, desc, cat, valor, obs, rep, mKey, mLabel};
+  } else {
+    // Create — handle recurrence
+    const newEntry = {id:trxSeq++, data, tipo, desc, cat, valor, obs, rep, mKey, mLabel, active:true, createdAt:new Date().toISOString()};
+    trxExtra.push(newEntry);
+    if(rep==='monthly'){
+      // Add 11 more months
+      for(let i=1;i<=11;i++){
+        const d = new Date(data); d.setMonth(d.getMonth()+i);
+        const nd = d.toISOString().slice(0,10);
+        const nk = dateToMKey(nd);
+        trxExtra.push({...newEntry, id:trxSeq++, data:nd, mKey:nk, mLabel:mKeyToLabel(nk)});
+      }
+    }
+  }
+
+  saveState();
+  closeM('m-lanc-add');
+  initRAWWithExtras();
+  renderLanc();
+  // Refresh active section
+  const active = document.querySelector('.sec.on');
+  if(active && active.id !== 'sec-lanc') renderSec(active.id.replace('sec-',''));
+}
+
+// Delete flow
+let _delLancId = null;
+function deleteLanc(id){
+  const t = trxExtra.find(x=>x.id===id);
+  if(!t) return;
+  _delLancId = id;
+  document.getElementById('lanc-del-desc').textContent = `"${t.desc}" — ${t.mLabel} — ${brl(t.valor)}`;
+  openM('m-lanc-del');
+}
+function confirmDelLanc(){
+  if(_delLancId===null) return;
+  trxExtra = trxExtra.filter(x=>x.id!==_delLancId);
+  _delLancId = null;
+  saveState();
+  closeM('m-lanc-del');
+  initRAWWithExtras();
+  renderLanc();
+  const active = document.querySelector('.sec.on');
+  if(active && active.id !== 'sec-lanc') renderSec(active.id.replace('sec-',''));
+}
+
+// Render lançamentos table
+function renderLanc(){
+  const filterMes  = document.getElementById('lanc-filter-mes')?.value  || '';
+  const filterTipo = document.getElementById('lanc-filter-tipo')?.value || '';
+  const filterCat  = document.getElementById('lanc-filter-cat')?.value  || '';
+
+  // Populate month filter from trxExtra months
+  const months = [...new Set(trxExtra.map(t=>t.mKey))].sort();
+  const mfEl = document.getElementById('lanc-filter-mes');
+  if(mfEl){
+    const prev = mfEl.value;
+    mfEl.innerHTML = '<option value="">Todos os meses</option>' + months.map(m=>`<option value="${m}">${mKeyToLabel(m)}</option>`).join('');
+    if(prev) mfEl.value = prev;
+  }
+
+  // Populate category filter
+  const usedCats = [...new Set(trxExtra.map(t=>t.cat))].sort();
+  const cfEl = document.getElementById('lanc-filter-cat');
+  if(cfEl){
+    const prev = cfEl.value;
+    cfEl.innerHTML = '<option value="">Todas as categorias</option>' + usedCats.map(c=>`<option value="${c}">${c}</option>`).join('');
+    if(prev) cfEl.value = prev;
+  }
+
+  // Filter
+  let list = [...trxExtra].sort((a,b)=>b.data.localeCompare(a.data));
+  if(filterMes)  list = list.filter(t=>t.mKey===filterMes);
+  if(filterTipo) list = list.filter(t=>t.tipo===filterTipo);
+  if(filterCat)  list = list.filter(t=>t.cat===filterCat);
+
+  // Summary strip
+  const totRec  = list.filter(t=>t.tipo==='rec').reduce((s,t)=>s+t.valor,0);
+  const totDesp = list.filter(t=>t.tipo==='desp').reduce((s,t)=>s+t.valor,0);
+  const totRes  = totRec - totDesp;
+  document.getElementById('lanc-summary').innerHTML = `
+    <div class="kpi g"><div class="kl">Receitas</div><div class="kv gc" style="font-size:1.2rem">${brl(totRec)}</div></div>
+    <div class="kpi r"><div class="kl">Despesas</div><div class="kv rc" style="font-size:1.2rem">${brl(totDesp)}</div></div>
+    <div class="kpi ${totRes>=0?'b':'r'}"><div class="kl">Saldo</div><div class="kv ${totRes>=0?'gc':'rc'}" style="font-size:1.2rem">${totRes>=0?'+':''}${brl(totRes)}</div></div>`;
+
+  document.getElementById('lanc-count').textContent = list.length + ' lançamento(s)';
+
+  const tbody = document.getElementById('lanc-tbody');
+  const empty = document.getElementById('lanc-empty');
+
+  if(!list.length){
+    tbody.innerHTML='';
+    empty.style.display='block';
+    return;
+  }
+  empty.style.display='none';
+
+  // Format date display
+  function fmtDate(iso){
+    const p=iso.split('-');
+    return p.length===3?`${p[2]}/${p[1]}/${p[0]}`:iso;
+  }
+
+  tbody.innerHTML = list.map(t=>`
+    <tr class="trow">
+      <td style="padding-left:1.5rem;color:var(--muted2);font-family:'DM Mono',monospace;font-size:12px">${fmtDate(t.data)}</td>
+      <td class="nm">
+        ${t.desc}
+        ${t.obs?`<span style="font-size:11px;color:var(--muted);margin-left:6px">${t.obs}</span>`:''}
+        ${t.rep==='monthly'?'<span class="badge gy" style="margin-left:6px;font-size:10px">↺ mensal</span>':''}
+      </td>
+      <td><span class="badge bl">${t.cat}</span></td>
+      <td><span class="badge ${t.tipo==='rec'?'ok':'bad'}">${t.tipo==='rec'?'Receita':'Despesa'}</span></td>
+      <td style="color:${t.tipo==='rec'?'#22c55e':'#ef4444'};font-family:'DM Mono',monospace;font-weight:500;white-space:nowrap">
+        ${t.tipo==='rec'?'+':'-'}${brl(t.valor)}
+      </td>
+      <td style="text-align:right;padding-right:1rem">
+        <button class="btn-icon" onclick="editLanc(${t.id})" title="Editar">✎</button>
+        <button class="btn-icon" onclick="deleteLanc(${t.id})" title="Excluir" style="color:#f87171">×</button>
+      </td>
+    </tr>`).join('');
+}
+
+// Override openM for new lanc button in nav (it calls openNewLanc)
+document.querySelector('[onclick="openM(\'m-lanc-add\')"]').onclick = openNewLanc;
+
+
+// ============================================================
+// INVESTIMENTOS
+// ============================================================
+
+const INV_CLASSES = ['Renda Fixa','Renda Variável','FIIs','Cripto','Fundos','Exterior','Previdência','Outros'];
+const INV_COLORS  = {'Renda Fixa':'#22c55e','Renda Variável':'#60a5fa','FIIs':'#f59e0b','Cripto':'#f97316','Fundos':'#a78bfa','Exterior':'#34d399','Previdência':'#ec4899','Outros':'#6b7a99'};
+const CDI_MENSAL  = 0.008; // ~10,5% a.a. referência
+
+function calcInvRent(){
+  const custo = parseFloat(document.getElementById('inv-custo').value)||0;
+  const atual = parseFloat(document.getElementById('inv-atual').value)||0;
+  const el    = document.getElementById('inv-rent-preview');
+  if(!custo||!atual){ el.textContent='—'; el.style.color='var(--muted)'; return; }
+  const rentPct = ((atual - custo) / custo) * 100;
+  const ganho   = atual - custo;
+  el.textContent = (rentPct>=0?'+':'')+rentPct.toFixed(2)+'% ('+( ganho>=0?'+':'')+brl(ganho)+')';
+  el.style.color = rentPct>=0?'#22c55e':'#ef4444';
+}
+
+function openNewInv(){
+  document.getElementById('inv-edit-id').value = '';
+  document.getElementById('m-inv-title').textContent = 'Novo investimento';
+  document.getElementById('inv-nome').value    = '';
+  document.getElementById('inv-classe').value  = 'Renda Fixa';
+  document.getElementById('inv-custo').value   = '';
+  document.getElementById('inv-atual').value   = '';
+  document.getElementById('inv-data').value    = todayISO();
+  document.getElementById('inv-bench').value   = 'CDI';
+  document.getElementById('inv-liquidez').value= 'Diária';
+  document.getElementById('inv-obs').value     = '';
+  document.getElementById('inv-ap-tipo').value = 'aporte';
+  document.getElementById('inv-ap-valor').value= '';
+  document.getElementById('inv-rent-preview').textContent = '—';
+  document.getElementById('inv-rent-preview').style.color = 'var(--muted)';
+  openM('m-inv-add');
+}
+
+function editInv(id){
+  const inv = investimentos.find(x=>x.id===id);
+  if(!inv) return;
+  document.getElementById('inv-edit-id').value  = id;
+  document.getElementById('m-inv-title').textContent = 'Editar investimento';
+  document.getElementById('inv-nome').value     = inv.nome;
+  document.getElementById('inv-classe').value   = inv.classe;
+  document.getElementById('inv-custo').value    = inv.custo;
+  document.getElementById('inv-atual').value    = inv.atual;
+  document.getElementById('inv-data').value     = inv.data;
+  document.getElementById('inv-bench').value    = inv.bench||'CDI';
+  document.getElementById('inv-liquidez').value = inv.liquidez||'Diária';
+  document.getElementById('inv-obs').value      = inv.obs||'';
+  document.getElementById('inv-ap-tipo').value  = 'aporte';
+  document.getElementById('inv-ap-valor').value = '';
+  calcInvRent();
+  openM('m-inv-add');
+}
+
+function saveInv(){
+  const editId = document.getElementById('inv-edit-id').value;
+  const nome   = document.getElementById('inv-nome').value.trim();
+  const classe = document.getElementById('inv-classe').value;
+  const custo  = parseFloat(document.getElementById('inv-custo').value)||0;
+  const atual  = parseFloat(document.getElementById('inv-atual').value)||0;
+  const data   = document.getElementById('inv-data').value;
+  const bench  = document.getElementById('inv-bench').value;
+  const liq    = document.getElementById('inv-liquidez').value;
+  const obs    = document.getElementById('inv-obs').value.trim();
+  const apTipo = document.getElementById('inv-ap-tipo').value;
+  const apVal  = parseFloat(document.getElementById('inv-ap-valor').value)||0;
+
+  if(!nome||!custo){ alert('Preencha nome e valor investido.'); return; }
+
+  const now = new Date().toISOString();
+
+  if(editId){
+    const idx = investimentos.findIndex(x=>x.id===parseInt(editId));
+    if(idx>=0){
+      investimentos[idx] = {...investimentos[idx], nome, classe, custo, atual, data, bench, liq, obs, updatedAt:now};
+      // Register aporte/resgate if filled
+      if(apVal>0){
+        investimentos[idx].aportes = investimentos[idx].aportes||[];
+        investimentos[idx].aportes.push({tipo:apTipo, valor:apVal, data:todayISO()});
+        // Update custo and atual
+        if(apTipo==='aporte'){ investimentos[idx].custo += apVal; investimentos[idx].atual += apVal; }
+        else { investimentos[idx].atual = Math.max(0, investimentos[idx].atual - apVal); }
+      }
+    }
+  } else {
+    const newInv = {id:invSeq++, nome, classe, custo, atual, data, bench, liq, obs, createdAt:now,
+      aportes: apVal>0 ? [{tipo:apTipo, valor:apVal, data}] : []};
+    investimentos.push(newInv);
+  }
+
+  saveState();
+  closeM('m-inv-add');
+  renderInv();
+}
+
+let _delInvId = null;
+function deleteInv(id){
+  const inv = investimentos.find(x=>x.id===id);
+  if(!inv) return;
+  _delInvId = id;
+  document.getElementById('inv-del-desc').textContent = `"${inv.nome}" — ${inv.classe} — ${brl(inv.atual)}`;
+  openM('m-inv-del');
+}
+function confirmDelInv(){
+  if(_delInvId===null) return;
+  investimentos = investimentos.filter(x=>x.id!==_delInvId);
+  _delInvId = null;
+  saveState();
+  closeM('m-inv-del');
+  renderInv();
+}
+
+function renderInv(){
+  const filterClasse = document.getElementById('inv-filter-classe')?.value||'';
+
+  // Populate classe filter
+  const usedClasses = [...new Set(investimentos.map(x=>x.classe))].sort();
+  const cfEl = document.getElementById('inv-filter-classe');
+  if(cfEl){ const prev=cfEl.value; cfEl.innerHTML='<option value="">Todas as classes</option>'+usedClasses.map(c=>`<option value="${c}">${c}</option>`).join(''); if(prev) cfEl.value=prev; }
+
+  const list = filterClasse ? investimentos.filter(x=>x.classe===filterClasse) : investimentos;
+  const totalAtual  = list.reduce((s,x)=>s+x.atual,0);
+  const totalCusto  = list.reduce((s,x)=>s+x.custo,0);
+  const totalGanho  = totalAtual - totalCusto;
+  const rentTotal   = totalCusto>0?((totalGanho/totalCusto)*100):0;
+
+  // KPI strip
+  document.getElementById('inv-kpis').innerHTML = `
+    <div class="kpi b"><div class="kl">Patrimônio atual</div><div class="kv bc" style="font-size:1.2rem">${brl(totalAtual)}</div><div class="ks">${list.length} ativo(s)</div></div>
+    <div class="kpi n"><div class="kl">Total investido</div><div class="kv wc" style="font-size:1.2rem">${brl(totalCusto)}</div><div class="ks">Custo médio</div></div>
+    <div class="kpi ${totalGanho>=0?'g':'r'}"><div class="kl">Ganho / perda</div><div class="kv ${totalGanho>=0?'gc':'rc'}" style="font-size:1.2rem">${totalGanho>=0?'+':''}${brl(totalGanho)}</div><div class="ks ${totalGanho>=0?'ok':'bad'}">${rentTotal>=0?'+':''}${rentTotal.toFixed(2)}% total</div></div>
+    <div class="kpi n"><div class="kl">vs CDI (ref. 10,5%a.a.)</div><div class="kv ${rentTotal>=10.5?'gc':'yc'}" style="font-size:1.2rem">${rentTotal>=0?'+':''}${(rentTotal-10.5).toFixed(2)}pp</div><div class="ks ${rentTotal>=10.5?'ok':'warn'}">${rentTotal>=10.5?'Acima do CDI':'Abaixo do CDI'}</div></div>`;
+
+  // Pie chart
+  const byClasse = {};
+  investimentos.forEach(x=>{ byClasse[x.classe]=(byClasse[x.classe]||0)+x.atual; });
+  const pieEntries = Object.entries(byClasse).sort((a,b)=>b[1]-a[1]);
+  document.getElementById('inv-leg').innerHTML = pieEntries.map(([cls])=>`<span><span class="ldot" style="background:${INV_COLORS[cls]||'#6b7a99'}"></span>${cls}</span>`).join('');
+  dc('ch-inv-pie');
+  if(pieEntries.length){
+    new Chart(document.getElementById('ch-inv-pie'),{type:'doughnut',data:{labels:pieEntries.map(([c])=>c),datasets:[{data:pieEntries.map(([,v])=>v),backgroundColor:pieEntries.map(([c])=>INV_COLORS[c]||'#6b7a99'),borderWidth:2,borderColor:'#111827'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`${ctx.label}: ${brl(ctx.raw)} (${(ctx.raw/totalAtual*100).toFixed(1)}%)`}}}}});
+    charts['ch-inv-pie'] = document.getElementById('ch-inv-pie').__chartjs__;
+  }
+
+  // Evolution chart — group aportes by month
+  const evoMap = {};
+  investimentos.forEach(inv=>{
+    (inv.aportes||[]).forEach(ap=>{
+      const mk = ap.data.slice(0,7);
+      evoMap[mk] = (evoMap[mk]||0) + (ap.tipo==='aporte'?ap.valor:-ap.valor);
+    });
+    // Add initial cost at creation date
+    if(inv.data){ const mk=inv.data.slice(0,7); evoMap[mk]=(evoMap[mk]||0)+inv.custo; }
+  });
+  const evoKeys = Object.keys(evoMap).sort();
+  let cumulative = 0;
+  const evoData = evoKeys.map(k=>{ cumulative+=evoMap[k]; return Math.round(cumulative*100)/100; });
+  const evoLabels = evoKeys.map(k=>{ const[y,m]=k.split('-');const mn=['','Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];return mn[parseInt(m)]+'/'+y.slice(2); });
+  dc('ch-inv-evo');
+  if(evoLabels.length){
+    new Chart(document.getElementById('ch-inv-evo'),{type:'line',data:{labels:evoLabels,datasets:[{label:'Patrimônio',data:evoData,borderColor:'#60a5fa',backgroundColor:'rgba(96,165,250,.1)',fill:true,tension:.3,pointRadius:4,pointBackgroundColor:'#60a5fa'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#6b7a99'},grid:{color:'rgba(255,255,255,.04)'}},y:{ticks:{color:'#6b7a99',callback:v=>brlk(v)},grid:{color:'rgba(255,255,255,.04)'}}}}});
+  } else {
+    const ctx=document.getElementById('ch-inv-evo').getContext('2d');
+    ctx.clearRect(0,0,999,999);
+  }
+
+  // Positions table
+  const empty = document.getElementById('inv-empty');
+  const tbody  = document.getElementById('inv-tbody');
+  if(!list.length){ tbody.innerHTML=''; empty.style.display='block'; }
+  else {
+    empty.style.display='none';
+    const tot = list.reduce((s,x)=>s+x.atual,0)||1;
+    tbody.innerHTML = list.map(inv=>{
+      const rent = inv.custo>0?((inv.atual-inv.custo)/inv.custo*100):0;
+      const cartPct = (inv.atual/tot*100).toFixed(1);
+      const rentCls = rent>=0?'gc':'rc';
+      return`<tr class="trow" onclick="editInv(${inv.id})">
+        <td style="padding-left:1.5rem">
+          <div style="font-weight:500;color:var(--text)">${inv.nome}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">${inv.liquidez||''}${inv.bench?' · ref. '+inv.bench:''}${inv.obs?' · '+inv.obs:''}</div>
+        </td>
+        <td><span class="badge bl">${inv.classe}</span></td>
+        <td style="font-family:'DM Mono',monospace;color:var(--muted2)">${brl(inv.custo)}</td>
+        <td style="font-family:'DM Mono',monospace;color:var(--text);font-weight:500">${brl(inv.atual)}</td>
+        <td style="font-family:'DM Mono',monospace;color:${rent>=0?'#22c55e':'#ef4444'};font-weight:500">${rent>=0?'+':''}${rent.toFixed(2)}%</td>
+        <td>
+          <div style="display:flex;align-items:center;gap:6px">
+            <div style="flex:1;background:var(--bg3);border-radius:4px;height:6px;overflow:hidden"><div style="width:${cartPct}%;background:#60a5fa;height:100%;border-radius:4px"></div></div>
+            <span style="font-size:12px;color:var(--muted);font-family:'DM Mono',monospace;width:36px">${cartPct}%</span>
+          </div>
+        </td>
+        <td style="text-align:right;padding-right:1rem" onclick="event.stopPropagation()">
+          <button class="btn-icon" onclick="deleteInv(${inv.id})" style="color:#f87171" title="Excluir">×</button>
+        </td>
+      </tr>`;
+    }).join('');
+  }
+
+  // Aportes history
+  const allAportes = investimentos.flatMap(inv=>(inv.aportes||[]).map(ap=>({...ap, nome:inv.nome}))).sort((a,b)=>b.data.localeCompare(a.data));
+  const apCard = document.getElementById('inv-aportes-card');
+  if(allAportes.length){
+    apCard.style.display='block';
+    document.getElementById('inv-aportes-tbody').innerHTML = allAportes.slice(0,20).map(ap=>`
+      <tr>
+        <td style="font-family:'DM Mono',monospace;font-size:12px;color:var(--muted2)">${ap.data}</td>
+        <td class="nm">${ap.nome}</td>
+        <td><span class="badge ${ap.tipo==='aporte'?'ok':'warn'}">${ap.tipo==='aporte'?'Aporte':'Resgate'}</span></td>
+        <td style="font-family:'DM Mono',monospace;font-weight:500;color:${ap.tipo==='aporte'?'#22c55e':'#f59e0b'}">${ap.tipo==='aporte'?'+':'-'}${brl(ap.valor)}</td>
+        <td style="color:var(--muted);font-size:12px">${ap.obs||''}</td>
+      </tr>`).join('');
+  } else { apCard.style.display='none'; }
+}
+
+document.getElementById('btn-inv-add').onclick = openNewInv;
+
 // ============================================================
 // CLOSE MODALS ON OVERLAY CLICK
 // ============================================================
@@ -1264,11 +2056,13 @@ document.querySelectorAll('.moverlay').forEach(o=>o.addEventListener('click',fun
   budgets  =saved.budgets  ||DEFAULT_STATE.budgets;
   metas    =saved.metas    ||DEFAULT_STATE.metas;
   metaSeq  =saved.metaSeq  ||DEFAULT_STATE.metaSeq;
-  trxExtra =saved.trxExtra ||[];
-  trxSeq   =saved.trxSeq   ||1;
-  importedRaw=saved.importedRaw||null;
+  trxExtra    =saved.trxExtra    ||[];
+  trxSeq      =saved.trxSeq      ||1;
+  investimentos=saved.investimentos||[];
+  invSeq      =saved.invSeq      ||1;
+  importedRaw =saved.importedRaw ||null;
   dataSource =saved.dataSource ||'sample';
-  initRAW();
+  initRAWWithExtras();
   renderVisao();
   const ind=document.getElementById('save-ind');
   if(ind){ind.textContent='● IndexedDB conectado';ind.style.opacity='1';ind.style.color='var(--accent)';setTimeout(()=>{ind.style.opacity='0';},3000);}
