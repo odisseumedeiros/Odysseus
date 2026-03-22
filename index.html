@@ -757,7 +757,7 @@ jan    | 2026 | 2026-01-10 | padaria         | alimentação        | cafeterias
       <div style="font-size:13px;font-weight:500;color:var(--text)" id="ai-profile-name">Perfil não configurado</div>
       <div style="font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="ai-profile-goals"></div>
     </div>
-    <span id="ai-model-badge" class="badge bl" style="flex-shrink:0">Gemini 1.5 Flash</span>
+    <span id="ai-model-badge" class="badge bl" style="flex-shrink:0">Gemini 2.0 Flash</span>
   </div>
 
   <!-- Suggested questions -->
@@ -2817,7 +2817,7 @@ function saveMetaUpdate(){
 // ASSISTENTE IA — GEMINI
 // ============================================================
 
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
+const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
 
 // Build financial context snapshot for the AI
 function buildFinancialContext(){
@@ -3134,7 +3134,7 @@ function updateFloatContext(){
 
   // Status line
   const st = document.getElementById('float-status');
-  if(st) st.textContent = aiProfile.geminiKey ? 'Gemini 1.5 Flash · conectado' : 'Chave não configurada';
+  if(st) st.textContent = aiProfile.geminiKey ? 'Gemini 2.0 Flash · conectado' : 'Chave não configurada';
 }
 
 function renderFloatChips(){
