@@ -1610,17 +1610,47 @@ document.getElementById('btn-meta-mgr').onclick=openMetaMgr;
 // ============================================================
 function renderKPIs(){
   if(!RAW.length)return;
-  const tR=RAW.reduce((s,x)=>s+x.r,0),tD=RAW.reduce((s,x)=>s+x.d,0),tRes=tR-tD,pp=tR>0?(tRes/tR*100):0,dR=tR>0?(tD/tR*100):0;
-  let morT=0,empT=0;RAW.forEach(x=>{morT+=(x.cat['Moradia']||0);empT+=(x.cat['Empréstimos']||0);});
-  document.getElementById('kigrid').innerHTML=[{l:'Taxa de poupança',v:pct(pp),b:'Meta: 25%',col:pp>=25?'#22c55e':pp>=10?'#f59e0b':'#ef4444'},{l:'Despesas / Receita',v:pct(dR),b:'Ideal: <65%',col:dR<65?'#22c55e':dR<75?'#f59e0b':'#ef4444'},{l:'Total poupado',v:brl(Math.max(0,tRes)),b:RAW.length+' meses',col:'#60a5fa'},{l:'Média poupada/mês',v:brl(Math.max(0,tRes/RAW.length)),b:'Média',col:'#34d399'},{l:'Empréstimos pagos',v:brl(empT),b:'No período',col:empT>500?'#f59e0b':'#22c55e'},{l:'Melhor superávit',v:brl(Math.max(...RAW.map(x=>x.r-x.d))),b:RAW.reduce((a,b)=>(a.r-a.d)>(b.r-b.d)?a:b).l,col:'#22c55e'}].map(k=>`<div class="ki"><div class="kil">${k.l}</div><div class="kiv" style="color:${k.col}">${k.v}</div><div class="kib">${k.b}</div></div>`).join('');
-  mk('ch-radar',{type:'radar',data:{labels:['Poupança','Controle gastos','Quitação dívidas','Fluxo positivo','Regularidade','Renda'],datasets:[{label:'Seu perfil',data:[Math.min(100,pp/25*100),Math.min(100,Math.max(0,75-dR+65)),Math.min(100,Math.max(0,(1-empT/2000)*100)),Math.min(100,Math.max(0,tRes/RAW.length/500*100)),60,Math.min(100,tR/RAW.length/2000*100)],backgroundColor:'rgba(34,211,153,.15)',borderColor:'#34d399',pointBackgroundColor:'#34d399',pointRadius:4},{label:'Meta ideal',data:[75,75,80,75,80,75],backgroundColor:'rgba(96,165,250,.05)',borderColor:'rgba(96,165,250,.4)',borderDash:[5,4],pointRadius:0}]},options:{responsive:true,maintainAspectRatio:false,scales:{r:{min:0,max:100,ticks:{stepSize:25,color:'#6b7a99',backdropColor:'transparent',font:{size:10}},grid:{color:'rgba(255,255,255,.06)'},angleLines:{color:'rgba(255,255,255,.06)'},pointLabels:{color:'#9aa5bf',font:{size:11}}}},plugins:{legend:{labels:{color:'#9aa5bf',boxWidth:10,font:{size:12}}}}}});
+  const rows=getMeses();
+  if(!rows.length)return;
+  const n=rows.length;
+  const tR=rows.reduce((s,x)=>s+x.r,0);
+  const tD=rows.reduce((s,x)=>s+x.d,0);
+  const tRes=tR-tD;
+  const pp=tR>0?(tRes/tR*100):0;
+  const dR=tR>0?(tD/tR*100):0;
+  let morT=0,empT=0;
+  rows.forEach(x=>{morT+=(x.cat['Moradia']||0);empT+=(x.cat['Empréstimos']||0);});
+  const best=rows.reduce((a,b)=>(a.r-a.d)>(b.r-b.d)?a:b);
+  const periodLabel=n===1?rows[0].l:rows[0].l+' – '+rows[n-1].l;
+
+  document.getElementById('kigrid').innerHTML=[
+    {l:'Taxa de poupança',    v:pct(pp),                      b:'Meta: 25%',           col:pp>=25?'#22c55e':pp>=10?'#f59e0b':'#ef4444'},
+    {l:'Despesas / Receita',  v:pct(dR),                      b:'Ideal: <65%',         col:dR<65?'#22c55e':dR<75?'#f59e0b':'#ef4444'},
+    {l:'Total poupado',       v:brl(Math.max(0,tRes)),         b:periodLabel,           col:'#60a5fa'},
+    {l:'Média poupada/mês',   v:brl(Math.max(0,tRes/n)),       b:n+' mês(es)',          col:'#34d399'},
+    {l:'Empréstimos pagos',   v:brl(empT),                     b:'No período',          col:empT>500?'#f59e0b':'#22c55e'},
+    {l:'Melhor superávit',    v:brl(Math.max(...rows.map(x=>x.r-x.d))), b:best.l,      col:'#22c55e'},
+  ].map(k=>`<div class="ki"><div class="kil">${k.l}</div><div class="kiv" style="color:${k.col}">${k.v}</div><div class="kib">${k.b}</div></div>`).join('');
+
+  mk('ch-radar',{type:'radar',data:{labels:['Poupança','Controle gastos','Quitação dívidas','Fluxo positivo','Regularidade','Renda'],datasets:[
+    {label:'Seu perfil',data:[
+      Math.min(100,pp/25*100),
+      Math.min(100,Math.max(0,75-dR+65)),
+      Math.min(100,Math.max(0,(1-empT/2000)*100)),
+      Math.min(100,Math.max(0,tRes/n/500*100)),
+      Math.min(100,n/6*100),
+      Math.min(100,tR/n/2000*100)
+    ],backgroundColor:'rgba(34,211,153,.15)',borderColor:'#34d399',pointBackgroundColor:'#34d399',pointRadius:4},
+    {label:'Meta ideal',data:[75,75,80,75,80,75],backgroundColor:'rgba(96,165,250,.05)',borderColor:'rgba(96,165,250,.4)',borderDash:[5,4],pointRadius:0}
+  ]},options:{responsive:true,maintainAspectRatio:false,scales:{r:{min:0,max:100,ticks:{stepSize:25,color:'#6b7a99',backdropColor:'transparent',font:{size:10}},grid:{color:'rgba(255,255,255,.06)'},angleLines:{color:'rgba(255,255,255,.06)'},pointLabels:{color:'#9aa5bf',font:{size:11}}}},plugins:{legend:{labels:{color:'#9aa5bf',boxWidth:10,font:{size:12}}}}}});
+
   const diag=[];
-  if(pp>=25)diag.push({t:'ok',m:`<strong>Poupança excelente (${pct(pp)}).</strong> Acima da meta de 25%.`});
-  else if(pp>=10)diag.push({t:'warn',m:`<strong>Poupança de ${pct(pp)}.</strong> Abaixo dos 25%. Corte compras e lazer para elevar.`});
-  else diag.push({t:'bad',m:`<strong>Poupança crítica: ${pct(pp)}.</strong> Revisão urgente.`});
-  if(empT>0)diag.push({t:'warn',m:`<strong>Empréstimos: ${brl(empT)} no período.</strong> Quitação prioritária.`});
-  if(morT/tD>.4)diag.push({t:'warn',m:`<strong>Moradia: ${pct(morT/tD*100)} das despesas.</strong> Acima do ideal de 35%.`});
-  diag.push({t:'ok',m:`<strong>Melhor mês: ${RAW.reduce((a,b)=>(a.r-a.d)>(b.r-b.d)?a:b).l}</strong> — superávit de ${brl(Math.max(...RAW.map(x=>x.r-x.d)))}.`});
+  if(pp>=25)    diag.push({t:'ok',  m:`<strong>Poupança excelente (${pct(pp)})</strong> em ${periodLabel}. Acima da meta de 25%.`});
+  else if(pp>=10)diag.push({t:'warn',m:`<strong>Poupança de ${pct(pp)}</strong> em ${periodLabel}. Abaixo dos 25%. Corte compras e lazer para elevar.`});
+  else           diag.push({t:'bad', m:`<strong>Poupança crítica: ${pct(pp)}</strong> em ${periodLabel}. Revisão urgente.`});
+  if(empT>0)     diag.push({t:'warn',m:`<strong>Empréstimos: ${brl(empT)}</strong> no período. Quitação prioritária.`});
+  if(tD>0&&morT/tD>.4) diag.push({t:'warn',m:`<strong>Moradia: ${pct(morT/tD*100)} das despesas.</strong> Acima do ideal de 35%.`});
+  diag.push({t:'ok',m:`<strong>Melhor mês: ${best.l}</strong> — superávit de ${brl(best.r-best.d)}.`});
   document.getElementById('diag').innerHTML=diag.map(d=>`<div class="ins ${d.t}"><span class="ico">${d.t==='ok'?'✓':d.t==='warn'?'⚠':'✕'}</span><span class="msg">${d.m}</span></div>`).join('');
 }
 
