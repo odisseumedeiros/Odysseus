@@ -265,10 +265,27 @@ td.nm{color:var(--text)}
     </div>
   </div>
   <div class="hdr-right">
-    <div class="pfilter">
-      <button class="pfbtn on" onclick="setPeriod('mes',this)">Mês</button>
-      <button class="pfbtn" onclick="setPeriod('tri',this)">Trimestre</button>
-      <button class="pfbtn" onclick="setPeriod('all',this)">Todos</button>
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+      <div class="pfilter" id="period-tabs">
+        <button class="pfbtn on" onclick="setPeriod('mes',this)"  data-p="mes">Mês</button>
+        <button class="pfbtn"    onclick="setPeriod('range',this)"data-p="range">Intervalo</button>
+        <button class="pfbtn"    onclick="setPeriod('comp',this)" data-p="comp">Comparar</button>
+        <button class="pfbtn"    onclick="setPeriod('all',this)"  data-p="all">Todos</button>
+      </div>
+      <!-- Range picker (shown when Intervalo selected) -->
+      <div id="range-picker" style="display:none;align-items:center;gap:6px;flex-wrap:wrap">
+        <select id="range-from" onchange="applyRange()" style="padding:4px 8px;border-radius:7px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-size:12px;outline:none"></select>
+        <span style="color:var(--muted);font-size:12px">até</span>
+        <select id="range-to"   onchange="applyRange()" style="padding:4px 8px;border-radius:7px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-size:12px;outline:none"></select>
+      </div>
+      <!-- Compare picker (shown when Comparar selected) -->
+      <div id="comp-picker" style="display:none;align-items:center;gap:6px;flex-wrap:wrap">
+        <select id="comp-a" onchange="applyComp()" style="padding:4px 8px;border-radius:7px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-size:12px;outline:none"></select>
+        <span style="color:var(--muted);font-size:12px">vs</span>
+        <select id="comp-b" onchange="applyComp()" style="padding:4px 8px;border-radius:7px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-size:12px;outline:none"></select>
+      </div>
+      <!-- Single month picker (shown for Mês) -->
+      <select id="mes-picker" onchange="applyMes()" style="padding:4px 8px;border-radius:7px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-size:12px;outline:none"></select>
     </div>
     <button class="hdr-action" onclick="exportJSON()">⬇ Exportar</button>
     <label class="hdr-action" style="cursor:pointer">⬆ Importar<input type="file" accept=".json" onchange="importJSON(event)" style="display:none"></label>
@@ -667,7 +684,7 @@ async function confirmReset(){closeM('m-reset');try{const db=await openDB();cons
 // ESTADO MUTÁVEL
 // ============================================================
 const _s_init=JSON.parse(JSON.stringify(DEFAULT_STATE));
-let period='mes',curMes='fev';
+let period='mes',curMes='',rangeFrom='',rangeTo='',compA='',compB='';
 let budgets=_s_init.budgets,metas=_s_init.metas,metaSeq=_s_init.metaSeq;
 let trxExtra=_s_init.trxExtra,trxSeq=_s_init.trxSeq;
 let importedRaw=null,dataSource='sample';
@@ -684,7 +701,19 @@ function brlk(v){return v>=1000?'R$ '+Math.round(v/1000).toLocaleString('pt-BR')
 function pct(v){return v.toFixed(1).replace('.',',')+'%';}
 function dc(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
 function mk(id,cfg){dc(id);charts[id]=new Chart(document.getElementById(id),cfg);return charts[id];}
-function getMeses(){if(period==='mes')return RAW.filter(x=>x.m===curMes);if(period==='tri')return RAW.slice(-3);return RAW;}
+function getMeses(){
+  if(!RAW.length) return [];
+  if(period==='mes')  return RAW.filter(x=>x.m===curMes);
+  if(period==='range'){
+    const fi=RAW.findIndex(x=>x.m===rangeFrom);
+    const ti=RAW.findIndex(x=>x.m===rangeTo);
+    if(fi<0||ti<0) return RAW;
+    return RAW.slice(Math.min(fi,ti), Math.max(fi,ti)+1);
+  }
+  if(period==='comp')  return RAW; // comparison handled separately
+  return RAW; // 'all'
+}
+function getCompMeses(){ return {a: RAW.filter(x=>x.m===compA), b: RAW.filter(x=>x.m===compB)}; }
 function agg(rows){let r=0,d=0;const cat={};rows.forEach(x=>{r+=x.r;d+=x.d;Object.entries(x.cat).forEach(([k,v])=>{cat[k]=(cat[k]||0)+v;});});return{r:Math.round(r*100)/100,d:Math.round(d*100)/100,res:Math.round((r-d)*100)/100,cat};}
 function openDp(pid,tid,bid,t,html){document.getElementById(tid).textContent=t;document.getElementById(bid).innerHTML=html;document.getElementById(pid).classList.add('open');}
 function closeDp(id){document.getElementById(id).classList.remove('open');}
@@ -692,13 +721,53 @@ function openM(id){document.getElementById(id).classList.add('open');}
 function closeM(id){document.getElementById(id).classList.remove('open');}
 function trxTable(trxs){if(!trxs||!trxs.length)return'<p style="color:var(--muted);font-size:13px">Sem registros.</p>';return'<table><thead><tr><th>Descrição</th><th>Categoria</th><th>Valor</th></tr></thead><tbody>'+trxs.map(t=>`<tr><td class="nm">${t.t}</td><td>${t.c}</td><td style="color:${t.v>=0?'#22c55e':'#ef4444'};font-family:'DM Mono',monospace;font-weight:500">${t.v>=0?'+':'-'}${brl(t.v)}</td></tr>`).join('')+'</tbody></table>';}
 
+function sortRAW(raw){
+  // Parse each entry's label to a real date for correct chronological sort
+  const mMap={'jan':1,'fev':2,'mar':3,'abr':4,'mai':5,'jun':6,'jul':7,'ago':8,'set':9,'out':10,'nov':11,'dez':12};
+  return [...raw].sort((a,b)=>{
+    // label format "Jan/25", "Set/25" etc  or stored m key like "set2025", "2025-01"
+    const parse = x => {
+      // Try label like "Set/25" -> month=9 year=2025
+      const ml = x.l ? x.l.toLowerCase() : '';
+      const lm = ml.match(/^(\w{3})[\\/\-](\d{2,4})$/);
+      if(lm){ const yr=parseInt(lm[2]); return (yr<100?2000+yr:yr)*100+(mMap[lm[1].slice(0,3)]||0); }
+      // Try m key like "2025-01"
+      const km = (x.m||'').match(/^(\d{4})-(\d{2})$/);
+      if(km) return parseInt(km[1])*100+parseInt(km[2]);
+      // Try m key like "set2025"
+      const km2 = (x.m||'').match(/^([a-z]+)(\d{4})$/);
+      if(km2) return parseInt(km2[2])*100+(mMap[km2[1]]||0);
+      // Try m short like "set" "fev" — use position
+      return 0;
+    };
+    return parse(a)-parse(b);
+  });
+}
+
 function initRAW(){
-  RAW = (importedRaw && importedRaw.length) ? importedRaw : [];
-  MESES = RAW.map(x=>x.m);
+  const raw = (importedRaw && importedRaw.length) ? importedRaw : [];
+  RAW    = sortRAW(raw);
+  MESES  = RAW.map(x=>x.m);
   LABELS = RAW.map(x=>x.l);
   curMes = MESES.length ? MESES[MESES.length-1] : '';
-  // Update header meta
-  const metaEl = document.getElementById('hdr-meta');
+  rangeFrom = MESES.length ? MESES[0] : '';
+  rangeTo   = MESES.length ? MESES[MESES.length-1] : '';
+  compA  = MESES.length>1 ? MESES[MESES.length-2] : (MESES[0]||'');
+  compB  = MESES.length   ? MESES[MESES.length-1] : '';
+
+  // Populate all pickers
+  const opts = RAW.map(x=>`<option value="${x.m}">${x.l}</option>`).join('');
+  ['mes-picker','range-from','range-to','comp-a','comp-b'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.innerHTML=opts;
+  });
+  const mpEl=document.getElementById('mes-picker');   if(mpEl) mpEl.value=curMes;
+  const rfEl=document.getElementById('range-from');   if(rfEl) rfEl.value=rangeFrom;
+  const rtEl=document.getElementById('range-to');     if(rtEl) rtEl.value=rangeTo;
+  const caEl=document.getElementById('comp-a');       if(caEl) caEl.value=compA;
+  const cbEl=document.getElementById('comp-b');       if(cbEl) cbEl.value=compB;
+
+  // Header meta
+  const metaEl=document.getElementById('hdr-meta');
   if(metaEl){
     if(RAW.length){
       metaEl.innerHTML=`${RAW[0].l} — ${RAW[RAW.length-1].l} &nbsp;<span id="save-ind"></span>`;
@@ -706,21 +775,14 @@ function initRAW(){
       metaEl.innerHTML='Nenhum dado importado &nbsp;<span id="save-ind"></span>';
     }
   }
-  // Update data source badge
+  // Data source badge
   const b=document.getElementById('datasrc-badge');
   if(b){
-    if(!RAW.length){
-      b.className='src-badge sample';b.textContent='● sem dados';
-    } else {
-      b.className='src-badge '+dataSource;
-      b.textContent='● '+({xlsx:'Excel importado',gsheets:'Google Sheets',ofx:'OFX importado'}[dataSource]||dataSource);
-    }
+    if(!RAW.length){b.className='src-badge sample';b.textContent='● sem dados';}
+    else{b.className='src-badge '+dataSource;b.textContent='● '+({xlsx:'Excel importado',gsheets:'Google Sheets',ofx:'OFX importado'}[dataSource]||dataSource);}
   }
 }
 
-// ============================================================
-// NAVEGAÇÃO
-// ============================================================
 function showSec(id,btn){
   document.querySelectorAll('.sec').forEach(s=>s.classList.remove('on'));
   document.querySelectorAll('.nb').forEach(b=>b.classList.remove('on'));
@@ -728,12 +790,88 @@ function showSec(id,btn){
   btn.classList.add('on');
   renderSec(id);
 }
-function setPeriod(p,btn){period=p;document.querySelectorAll('.pfbtn').forEach(b=>b.classList.remove('on'));btn.classList.add('on');const a=document.querySelector('.sec.on');if(a)renderSec(a.id.replace('sec-',''));}
-function renderSec(id){if(id==='visao')renderVisao();else if(id==='orc')renderOrc();else if(id==='desp')renderDesp();else if(id==='rec')renderRec();else if(id==='metas')renderMetas();else if(id==='kpis')renderKPIs();}
+function setPeriod(p,btn){
+  period=p;
+  document.querySelectorAll('.pfbtn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  // Show/hide pickers
+  document.getElementById('mes-picker').style.display   = p==='mes'   ? 'block':'none';
+  document.getElementById('range-picker').style.display = p==='range' ? 'flex':'none';
+  document.getElementById('comp-picker').style.display  = p==='comp'  ? 'flex':'none';
+  const a=document.querySelector('.sec.on');
+  if(a) renderSec(a.id.replace('sec-',''));
+}
+function applyMes(){curMes=document.getElementById('mes-picker').value;renderSec(document.querySelector('.sec.on').id.replace('sec-',''));}
+function applyRange(){rangeFrom=document.getElementById('range-from').value;rangeTo=document.getElementById('range-to').value;renderSec(document.querySelector('.sec.on').id.replace('sec-',''));}
+function applyComp(){compA=document.getElementById('comp-a').value;compB=document.getElementById('comp-b').value;renderSec(document.querySelector('.sec.on').id.replace('sec-',''));}
+function renderSec(id){
+  if(id==='visao'){
+    if(period==='comp') renderComp();
+    else renderVisao();
+  }
+  else if(id==='orc')renderOrc();
+  else if(id==='desp')renderDesp();
+  else if(id==='rec')renderRec();
+  else if(id==='metas')renderMetas();
+  else if(id==='kpis')renderKPIs();
+}
 
 // ============================================================
 // VISÃO GERAL
 // ============================================================
+function renderComp(){
+  const {a:rowsA, b:rowsB} = getCompMeses();
+  const aggA = rowsA.length ? agg(rowsA) : {r:0,d:0,res:0,cat:{}};
+  const aggB = rowsB.length ? agg(rowsB) : {r:0,d:0,res:0,cat:{}};
+  const labelA = rowsA.length ? rowsA[0].l : compA;
+  const labelB = rowsB.length ? rowsB[0].l : compB;
+
+  const ppA = aggA.r>0?(aggA.res/aggA.r*100):0;
+  const ppB = aggB.r>0?(aggB.res/aggB.r*100):0;
+
+  // KPI cards — override visao cards with comparison
+  document.getElementById('v-rec').textContent=brl(aggA.r);
+  document.getElementById('v-rec-s').textContent=labelA+' (A)';
+  document.getElementById('v-desp').textContent=brl(aggA.d);
+  document.getElementById('v-desp-s').textContent='vs '+brl(aggB.d)+' ('+labelB+')';
+  document.getElementById('v-desp-s').className='ks';
+  const delta=aggB.r-aggA.r;
+  document.getElementById('v-res').textContent=brl(aggB.r);
+  document.getElementById('v-res').className='kv wc';
+  document.getElementById('v-res-s').textContent=labelB+' (B)';
+  document.getElementById('v-res-s').className='ks';
+  document.getElementById('v-poup').textContent=pct(ppA)+' / '+pct(ppB);
+  document.getElementById('v-poup').className='kv wc';
+  document.getElementById('v-poup-s').textContent='Poupança A / B';
+  document.getElementById('v-poup-s').className='ks';
+
+  // Bar chart: side-by-side comparison
+  mk('ch-vbar',{type:'bar',data:{labels:['Receita','Despesa','Resultado','Poupança (%)'],datasets:[
+    {label:labelA, data:[aggA.r, aggA.d, aggA.res, parseFloat(ppA.toFixed(1))], backgroundColor:'rgba(96,165,250,.75)', borderRadius:5},
+    {label:labelB, data:[aggB.r, aggB.d, aggB.res, parseFloat(ppB.toFixed(1))], backgroundColor:'rgba(52,211,153,.75)', borderRadius:5},
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{boxWidth:10}}},scales:{x:{ticks:{color:'#6b7a99'},grid:{color:'rgba(255,255,255,.04)'}},y:{ticks:{color:'#6b7a99',callback:v=>'R$ '+Math.round(v).toLocaleString('pt-BR')},grid:{color:'rgba(255,255,255,.04)'}}}}});
+
+  // Radar: categories comparison
+  const allCats=[...new Set([...Object.keys(aggA.cat),...Object.keys(aggB.cat)])];
+  mk('ch-vres',{type:'radar',data:{labels:allCats,datasets:[
+    {label:labelA, data:allCats.map(k=>aggA.cat[k]||0), backgroundColor:'rgba(96,165,250,.15)', borderColor:'#60a5fa', pointBackgroundColor:'#60a5fa', pointRadius:3},
+    {label:labelB, data:allCats.map(k=>aggB.cat[k]||0), backgroundColor:'rgba(52,211,153,.15)', borderColor:'#34d399', pointBackgroundColor:'#34d399', pointRadius:3},
+  ]},options:{responsive:true,maintainAspectRatio:false,scales:{r:{ticks:{backdropColor:'transparent',color:'#6b7a99',font:{size:10}},grid:{color:'rgba(255,255,255,.06)'},angleLines:{color:'rgba(255,255,255,.06)'},pointLabels:{color:'#9aa5bf',font:{size:11}}}},plugins:{legend:{labels:{boxWidth:10}}}}});
+
+  // Insights comparison
+  const ins=[];
+  const recDiff=((aggB.r-aggA.r)/Math.max(aggA.r,1)*100);
+  const despDiff=((aggB.d-aggA.d)/Math.max(aggA.d,1)*100);
+  ins.push({t:recDiff>=0?'ok':'warn',m:`<strong>Receita:</strong> ${labelA} ${brl(aggA.r)} → ${labelB} ${brl(aggB.r)} (${recDiff>=0?'+':''}${recDiff.toFixed(1)}%)`});
+  ins.push({t:despDiff<=0?'ok':'warn',m:`<strong>Despesa:</strong> ${labelA} ${brl(aggA.d)} → ${labelB} ${brl(aggB.d)} (${despDiff>=0?'+':''}${despDiff.toFixed(1)}%)`});
+  ins.push({t:ppB>=ppA?'ok':'warn',m:`<strong>Poupança:</strong> ${labelA} ${pct(ppA)} → ${labelB} ${pct(ppB)} (${ppB>=ppA?'melhora':'piora'})`});
+  allCats.forEach(cat=>{
+    const va=aggA.cat[cat]||0,vb=aggB.cat[cat]||0;
+    if(va>0||vb>0){const diff=((vb-va)/Math.max(va,1)*100);ins.push({t:diff<=10?'ok':'warn',m:`<strong>${cat}:</strong> ${brl(va)} → ${brl(vb)} (${diff>=0?'+':''}${diff.toFixed(0)}%)`});}
+  });
+  document.getElementById('insights').innerHTML=`<div style="font-size:12px;color:var(--muted);margin-bottom:.75rem;text-transform:uppercase;letter-spacing:.06em">Comparativo ${labelA} vs ${labelB}</div>`+ins.map(i=>`<div class="ins ${i.t}"><span class="ico">${i.t==='ok'?'✓':'⚠'}</span><span class="msg">${i.m}</span></div>`).join('');
+}
+
 function renderVisao(){
   if(!RAW.length){
     document.getElementById('v-rec').textContent='—';
