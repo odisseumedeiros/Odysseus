@@ -265,27 +265,30 @@ td.nm{color:var(--text)}
     </div>
   </div>
   <div class="hdr-right">
-    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+    <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap">
       <div class="pfilter" id="period-tabs">
-        <button class="pfbtn on" onclick="setPeriod('mes',this)"  data-p="mes">Mês</button>
-        <button class="pfbtn"    onclick="setPeriod('range',this)"data-p="range">Intervalo</button>
-        <button class="pfbtn"    onclick="setPeriod('comp',this)" data-p="comp">Comparar</button>
-        <button class="pfbtn"    onclick="setPeriod('all',this)"  data-p="all">Todos</button>
+        <button class="pfbtn on" onclick="setPeriod('mes',this)"   data-p="mes">Mês</button>
+        <button class="pfbtn"    onclick="setPeriod('ano',this)"   data-p="ano">Ano</button>
+        <button class="pfbtn"    onclick="setPeriod('range',this)" data-p="range">Intervalo</button>
+        <button class="pfbtn"    onclick="setPeriod('comp',this)"  data-p="comp">Comparar</button>
+        <button class="pfbtn"    onclick="setPeriod('all',this)"   data-p="all">Todos</button>
       </div>
-      <!-- Range picker (shown when Intervalo selected) -->
+      <!-- Mês picker -->
+      <select id="mes-picker" onchange="applyMes()" style="padding:4px 8px;border-radius:7px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-size:12px;outline:none;display:block"></select>
+      <!-- Ano picker -->
+      <select id="ano-picker" onchange="applyAno()" style="padding:4px 8px;border-radius:7px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-size:12px;outline:none;display:none"></select>
+      <!-- Intervalo picker -->
       <div id="range-picker" style="display:none;align-items:center;gap:6px;flex-wrap:wrap">
         <select id="range-from" onchange="applyRange()" style="padding:4px 8px;border-radius:7px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-size:12px;outline:none"></select>
         <span style="color:var(--muted);font-size:12px">até</span>
-        <select id="range-to"   onchange="applyRange()" style="padding:4px 8px;border-radius:7px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-size:12px;outline:none"></select>
+        <select id="range-to" onchange="applyRange()" style="padding:4px 8px;border-radius:7px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-size:12px;outline:none"></select>
       </div>
-      <!-- Compare picker (shown when Comparar selected) -->
+      <!-- Comparar picker -->
       <div id="comp-picker" style="display:none;align-items:center;gap:6px;flex-wrap:wrap">
         <select id="comp-a" onchange="applyComp()" style="padding:4px 8px;border-radius:7px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-size:12px;outline:none"></select>
         <span style="color:var(--muted);font-size:12px">vs</span>
         <select id="comp-b" onchange="applyComp()" style="padding:4px 8px;border-radius:7px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-size:12px;outline:none"></select>
       </div>
-      <!-- Single month picker (shown for Mês) -->
-      <select id="mes-picker" onchange="applyMes()" style="padding:4px 8px;border-radius:7px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-size:12px;outline:none"></select>
     </div>
     <button class="hdr-action" onclick="exportJSON()">⬇ Exportar</button>
     <label class="hdr-action" style="cursor:pointer">⬆ Importar<input type="file" accept=".json" onchange="importJSON(event)" style="display:none"></label>
@@ -1066,7 +1069,7 @@ async function confirmReset(){closeM('m-reset');try{const db=await openDB();cons
 // ESTADO MUTÁVEL
 // ============================================================
 const _s_init=JSON.parse(JSON.stringify(DEFAULT_STATE));
-let period='mes',curMes='',rangeFrom='',rangeTo='',compA='',compB='';
+let period='mes',curMes='',curAno='',rangeFrom='',rangeTo='',compA='',compB='';
 let budgets=_s_init.budgets,metas=_s_init.metas,metaSeq=_s_init.metaSeq;
 let trxExtra=_s_init.trxExtra,trxSeq=_s_init.trxSeq;
 let investimentos=[],invSeq=1;
@@ -1094,15 +1097,26 @@ function dc(id){if(charts[id]){charts[id].destroy();delete charts[id];}}
 function mk(id,cfg){dc(id);charts[id]=new Chart(document.getElementById(id),cfg);return charts[id];}
 function getMeses(){
   if(!RAW.length) return [];
-  if(period==='mes')  return RAW.filter(x=>x.m===curMes);
+  if(period==='mes')   return RAW.filter(x=>x.m===curMes);
+  if(period==='ano')   return RAW.filter(x=>yearOf(x)===curAno);
   if(period==='range'){
     const fi=RAW.findIndex(x=>x.m===rangeFrom);
     const ti=RAW.findIndex(x=>x.m===rangeTo);
     if(fi<0||ti<0) return RAW;
     return RAW.slice(Math.min(fi,ti), Math.max(fi,ti)+1);
   }
-  if(period==='comp')  return RAW; // comparison handled separately
+  if(period==='comp')  return RAW;
   return RAW; // 'all'
+}
+function yearOf(row){
+  // Extract year from label "Jan/26" -> "2026", or from mKey "2026-01" -> "2026"
+  const lm = (row.l||'').match(/\/(\d{2,4})$/);
+  if(lm){ const y=parseInt(lm[1]); return String(y<100?2000+y:y); }
+  const km = (row.m||'').match(/^(\d{4})/);
+  return km ? km[1] : '';
+}
+function getAvailableYears(){
+  return [...new Set(RAW.map(x=>yearOf(x)).filter(Boolean))].sort();
 }
 function getCompMeses(){ return {a: RAW.filter(x=>x.m===compA), b: RAW.filter(x=>x.m===compB)}; }
 function agg(rows){let r=0,d=0;const cat={};rows.forEach(x=>{r+=x.r;d+=x.d;Object.entries(x.cat).forEach(([k,v])=>{cat[k]=(cat[k]||0)+v;});});return{r:Math.round(r*100)/100,d:Math.round(d*100)/100,res:Math.round((r-d)*100)/100,cat};}
@@ -1151,6 +1165,12 @@ function initRAW(){
   ['mes-picker','range-from','range-to','comp-a','comp-b'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.innerHTML=opts;
   });
+  // Year picker
+  const years = getAvailableYears();
+  curAno = years.length ? years[years.length-1] : '';
+  const apEl=document.getElementById('ano-picker');
+  if(apEl) apEl.innerHTML=years.map(y=>`<option value="${y}">${y}</option>`).join('');
+  if(apEl && curAno) apEl.value=curAno;
   const mpEl=document.getElementById('mes-picker');   if(mpEl) mpEl.value=curMes;
   const rfEl=document.getElementById('range-from');   if(rfEl) rfEl.value=rangeFrom;
   const rtEl=document.getElementById('range-to');     if(rtEl) rtEl.value=rangeTo;
@@ -1185,16 +1205,18 @@ function setPeriod(p,btn){
   period=p;
   document.querySelectorAll('.pfbtn').forEach(b=>b.classList.remove('on'));
   btn.classList.add('on');
-  // Show/hide pickers
   document.getElementById('mes-picker').style.display   = p==='mes'   ? 'block':'none';
+  document.getElementById('ano-picker').style.display   = p==='ano'   ? 'block':'none';
   document.getElementById('range-picker').style.display = p==='range' ? 'flex':'none';
   document.getElementById('comp-picker').style.display  = p==='comp'  ? 'flex':'none';
   const a=document.querySelector('.sec.on');
   if(a) renderSec(a.id.replace('sec-',''));
 }
-function applyMes(){curMes=document.getElementById('mes-picker').value;renderSec(document.querySelector('.sec.on').id.replace('sec-',''));}
-function applyRange(){rangeFrom=document.getElementById('range-from').value;rangeTo=document.getElementById('range-to').value;renderSec(document.querySelector('.sec.on').id.replace('sec-',''));}
-function applyComp(){compA=document.getElementById('comp-a').value;compB=document.getElementById('comp-b').value;renderSec(document.querySelector('.sec.on').id.replace('sec-',''));}
+function applyMes(){curMes=document.getElementById('mes-picker').value;rerender();}
+function applyAno(){curAno=document.getElementById('ano-picker').value;rerender();}
+function applyRange(){rangeFrom=document.getElementById('range-from').value;rangeTo=document.getElementById('range-to').value;rerender();}
+function applyComp(){compA=document.getElementById('comp-a').value;compB=document.getElementById('comp-b').value;rerender();}
+function rerender(){ const a=document.querySelector('.sec.on'); if(a) renderSec(a.id.replace('sec-','')); }
 function renderSec(id){
   if(id==='visao'){
     if(period==='comp') renderComp();
@@ -1381,13 +1403,13 @@ function renderDespEvo(){
     legEl.innerHTML = `
       <span><span class="ldot" style="background:#22c55e"></span>Receita</span>
       <span><span class="ldot" style="background:#ef4444"></span>Despesa</span>`;
-    const evo = mk('ch-desp-evo',{type:'bar',data:{labels:LABELS,datasets:[
-      {label:'Receita', data:RAW.map(x=>x.r), backgroundColor:'rgba(34,197,94,.7)', borderRadius:4},
-      {label:'Despesa', data:RAW.map(x=>x.d), backgroundColor:'rgba(239,68,68,.7)',  borderRadius:4},
+    const _dRows=getMeses(); const evo = mk('ch-desp-evo',{type:'bar',data:{labels:_dRows.map(x=>x.l),datasets:[
+      {label:'Receita', data:_dRows.map(x=>x.r), backgroundColor:'rgba(34,197,94,.7)', borderRadius:4},
+      {label:'Despesa', data:_dRows.map(x=>x.d), backgroundColor:'rgba(239,68,68,.7)',  borderRadius:4},
     ]},options:{responsive:true,maintainAspectRatio:false,
       onClick:(e,els)=>{
         if(!els.length)return;
-        const row=RAW[els[0].index];
+        const row=_dRows[els[0].index];
         const isRec=els[0].datasetIndex===0;
         const trxs=(row.trx||[]).filter(t=>isRec?t.v>0:t.v<0);
         openDp('dp-desp','dp-desp-t','dp-desp-b',
@@ -1405,17 +1427,17 @@ function renderDespEvo(){
   } else {
     // Por categoria
     titleEl.textContent = 'Evolução por categoria — clique no ponto';
-    const allCats=[...new Set(RAW.flatMap(x=>Object.keys(x.cat)))];
+    const _cRows=getMeses();const allCats=[...new Set(_cRows.flatMap(x=>Object.keys(x.cat)))];
     legEl.innerHTML=allCats.map(c=>`<span><span class="ldot" style="background:${CC[c]||'#6b7a99'}"></span>${c}</span>`).join('');
-    const evo=mk('ch-desp-evo',{type:'line',data:{labels:LABELS,datasets:allCats.map(cat=>({
-      label:cat,data:RAW.map(x=>x.cat[cat]||0),
+    const evo=mk('ch-desp-evo',{type:'line',data:{labels:_cRows.map(x=>x.l),datasets:allCats.map(cat=>({
+      label:cat,data:_cRows.map(x=>x.cat[cat]||0),
       borderColor:CC[cat]||'#6b7a99',backgroundColor:(CC[cat]||'#6b7a99')+'22',
       tension:.3,pointRadius:4,fill:false
     }))},options:{responsive:true,maintainAspectRatio:false,
       onClick:(e,els)=>{
         if(!els.length)return;
         const cat=evo.data.datasets[els[0].datasetIndex].label;
-        const row=RAW[els[0].index];
+        const row=_cRows[els[0].index];
         const val=row.cat[cat]||0;
         openDp('dp-desp','dp-desp-t','dp-desp-b',cat+' — '+row.l,
           `<p style="font-size:13px;margin-bottom:1rem;color:var(--muted2)">Total em <strong>${cat}</strong>: <strong style="color:#ef4444">${brl(val)}</strong></p>`+
@@ -1432,9 +1454,18 @@ function renderDespEvo(){
 function renderDesp(){
   if(!RAW.length)return;
   renderDespEvo();
-  const rank={};RAW.forEach(x=>Object.entries(x.cat).forEach(([k,v])=>{rank[k]=(rank[k]||0)+v;}));
+  // Ranking usa período selecionado
+  const rankRows = getMeses();
+  const periodLabel = rankRows.length===RAW.length ? 'todo o período' :
+    rankRows.length===1 ? rankRows[0].l :
+    rankRows[0].l+' – '+rankRows[rankRows.length-1].l;
+  const rank={};rankRows.forEach(x=>Object.entries(x.cat).forEach(([k,v])=>{rank[k]=(rank[k]||0)+v;}));
   const sorted=Object.entries(rank).sort((a,b)=>b[1]-a[1]);const maxV=sorted[0]?.[1]||1;
-  document.getElementById('desp-rank').innerHTML=sorted.map(([cat,val])=>`<div class="brow"><span class="bl">${cat}</span><div class="bbg"><div class="bf" style="width:${Math.round(val/maxV*100)}%;background:${CC[cat]||'#6b7a99'}"></div></div><span class="bval">${brl(val)}</span></div>`).join('');
+  const rankTitle=document.querySelector('#desp-rank')?.previousElementSibling;
+  if(rankTitle && rankTitle.classList.contains('card-title')) rankTitle.textContent='Ranking — '+periodLabel;
+  document.getElementById('desp-rank').innerHTML=sorted.length
+    ? sorted.map(([cat,val])=>`<div class="brow"><span class="bl">${cat}</span><div class="bbg"><div class="bf" style="width:${Math.round(val/maxV*100)}%;background:${CC[cat]||'#6b7a99'}"></div></div><span class="bval">${brl(val)}</span></div>`).join('')
+    : '<p style="color:var(--muted);font-size:13px">Nenhum dado no período.</p>';
   mk('ch-desp-comp',{type:'bar',data:{labels:LABELS,datasets:[{label:'Total despesas',data:RAW.map(x=>x.d),backgroundColor:RAW.map(x=>`rgba(239,68,68,${.4+x.d/5000*.5})`),borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,onClick:(e,els)=>{if(!els.length)return;const row=RAW[els[0].index];openDp('dp-dcomp','dp-dcomp-t','dp-dcomp-b',row.l+' — Categorias',Object.entries(row.cat).sort((a,b)=>b[1]-a[1]).map(([c,v])=>`<div class="brow"><span class="bl">${c}</span><div class="bbg"><div class="bf" style="width:${Math.round(v/row.d*100)}%;background:${CC[c]||'#6b7a99'}"></div></div><span class="bval">${brl(v)}</span></div>`).join(''));},plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#6b7a99'},grid:{color:'rgba(255,255,255,.04)'}},y:{ticks:{color:'#6b7a99',callback:v=>brlk(v)},grid:{color:'rgba(255,255,255,.04)'}}}}});
 }
 
@@ -1780,6 +1811,12 @@ function initRAWWithExtras(){
   ['mes-picker','range-from','range-to','comp-a','comp-b'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.innerHTML=opts;
   });
+  // Year picker
+  const years = getAvailableYears();
+  curAno = years.length ? years[years.length-1] : '';
+  const apEl=document.getElementById('ano-picker');
+  if(apEl) apEl.innerHTML=years.map(y=>`<option value="${y}">${y}</option>`).join('');
+  if(apEl && curAno) apEl.value=curAno;
   const mpEl=document.getElementById('mes-picker');   if(mpEl) mpEl.value=curMes;
   const rfEl=document.getElementById('range-from');   if(rfEl) rfEl.value=rangeFrom;
   const rtEl=document.getElementById('range-to');     if(rtEl) rtEl.value=rangeTo;
