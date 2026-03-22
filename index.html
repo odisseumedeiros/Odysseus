@@ -3274,10 +3274,10 @@ async function sendFloatAI(){
   btn.disabled = false; btn.style.opacity = '1';
 }
 
-// Update context label when section changes
-const _origShowSec = showSec;
-function showSec(id, btn){
-  _origShowSec(id, btn);
+// Hook into renderSec to update float context (avoids call stack issue)
+const _origRenderSec = renderSec;
+function renderSec(id){
+  _origRenderSec(id);
   if(floatOpen){ updateFloatContext(); renderFloatChips(); }
 }
 
