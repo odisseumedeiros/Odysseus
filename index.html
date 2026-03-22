@@ -621,16 +621,9 @@ jan    | 2026 | 2026-01-10 | padaria         | alimentação        | cafeterias
 
 <script>
 // ============================================================
-// DADOS DE EXEMPLO (planilha original)
+// SEM DADOS DE EXEMPLO — importe sua planilha na aba "Importar dados"
 // ============================================================
-const SAMPLE_RAW=[
-  {m:'set',l:'Set/25',r:1549.38,d:1326.59,cat:{'Alimentação':141,'Compras e lazer':55,'Educação':326.96,'Moradia':765,'Saúde':25,'Streaming':13.63},trx:[{t:'gbs (salário)',c:'Renda',v:1543.13},{t:'pós graduação',c:'Educação',v:-94.48},{t:'pós graduação',c:'Educação',v:-94.48},{t:'pós graduação',c:'Educação',v:-69},{t:'pós graduação',c:'Educação',v:-69},{t:'cordão',c:'Compras e lazer',v:-30},{t:'sandalia',c:'Compras e lazer',v:-25},{t:'cabelo',c:'Saúde',v:-25},{t:'lanche',c:'Alimentação',v:-107},{t:'Spotify',c:'Streaming',v:-13.63},{t:'papai (aluguel)',c:'Moradia',v:-565},{t:'papai (aluguel)',c:'Moradia',v:-200},{t:'cafe',c:'Alimentação',v:-10},{t:'agua',c:'Alimentação',v:-3},{t:'agua',c:'Alimentação',v:-12},{t:'lanche',c:'Alimentação',v:-9}]},
-  {m:'out',l:'Out/25',r:2970.24,d:2454.78,cat:{'Alimentação':266.7,'Compras e lazer':254,'Educação':138,'Empréstimos':600,'Moradia':799.71,'Transporte':382.74,'Assinaturas':13.63},trx:[{t:'gbs net (salário)',c:'Renda',v:1543.13},{t:'adiantamento',c:'Renda',v:504.51},{t:'reembolso',c:'Renda',v:498.6},{t:'larissa (rec.)',c:'Renda',v:400},{t:'uber',c:'Transporte',v:-382.74},{t:'emprestimo',c:'Empréstimos',v:-600},{t:'pós graduação',c:'Educação',v:-138},{t:'Spotify',c:'Assinaturas',v:-13.63},{t:'compras',c:'Compras e lazer',v:-254},{t:'alimentação',c:'Alimentação',v:-266.7},{t:'papai (aluguel)',c:'Moradia',v:-514.44},{t:'papai (aluguel)',c:'Moradia',v:-285.27}]},
-  {m:'nov',l:'Nov/25',r:844.97,d:481.34,cat:{'Alimentação':163.2,'Educação':188.14,'Empréstimos':130},trx:[{t:'Gbs net (salário)',c:'Renda',v:840.86},{t:'ajuste',c:'Renda',v:4.11},{t:'padaria',c:'Alimentação',v:-22.2},{t:'jantar',c:'Alimentação',v:-141},{t:'Faculdade',c:'Educação',v:-188.14},{t:'coimbra (empréstimo)',c:'Empréstimos',v:-130}]},
-  {m:'dez',l:'Dez/25',r:3383.57,d:2963.96,cat:{'Alimentação':356,'Assinaturas':20,'Compras e lazer':914.76,'Educação':188.2,'Empréstimos':460,'Moradia':1000,'Saúde':25},trx:[{t:'GBS (salário)',c:'Renda',v:1543.13},{t:'gbs net (bônus)',c:'Renda',v:712.27},{t:'presente (recebido)',c:'Renda',v:500},{t:'Will credito',c:'Renda',v:228.17},{t:'alimentação',c:'Alimentação',v:-356},{t:'spotify',c:'Assinaturas',v:-20},{t:'Guns n roses (show)',c:'Compras e lazer',v:-690.15},{t:'roupa',c:'Compras e lazer',v:-121.61},{t:'Presente',c:'Compras e lazer',v:-103},{t:'pós graduação',c:'Educação',v:-188.2},{t:'coimbra (empréstimo)',c:'Empréstimos',v:-460},{t:'papai (aluguel)',c:'Moradia',v:-1000},{t:'cabelo',c:'Saúde',v:-25}]},
-  {m:'jan',l:'Jan/26',r:3673.73,d:3307.65,cat:{'Alimentação':315,'Compras e lazer':614.85,'Educação':138,'Moradia':2200,'Saúde':39.8},trx:[{t:'gbs (salário)',c:'Renda',v:1543.13},{t:'férias (13o)',c:'Renda',v:2130.17},{t:'academia',c:'Saúde',v:-34.8},{t:'casa (aluguel)',c:'Moradia',v:-1100},{t:'casa (aluguel)',c:'Moradia',v:-1100},{t:'presente karen',c:'Compras e lazer',v:-180},{t:'faculdade',c:'Educação',v:-138},{t:'alimentação',c:'Alimentação',v:-315},{t:'aniversário',c:'Compras e lazer',v:-14.85},{t:'mae (roupas)',c:'Compras e lazer',v:-420},{t:'remedio',c:'Saúde',v:-5}]},
-  {m:'fev',l:'Fev/26',r:1427.29,d:466,cat:{'Alimentação':142,'Assinaturas':11,'Compras e lazer':150,'Educação':138,'Saúde':25},trx:[{t:'gbs (salário)',c:'Renda',v:1388.29},{t:'troco',c:'Renda',v:39},{t:'alimentação',c:'Alimentação',v:-142},{t:'spotify',c:'Assinaturas',v:-11},{t:'maninha (presente)',c:'Compras e lazer',v:-150},{t:'pós graduação',c:'Educação',v:-138},{t:'cabelo',c:'Saúde',v:-25}]}
-];
+const SAMPLE_RAW=[];
 
 // ============================================================
 // PERSISTÊNCIA — IndexedDB
@@ -645,7 +638,7 @@ const DEFAULT_STATE={
     {id:3,n:'Reserva de emergência R$5k',tipo:'acumular',alvo:5000,atual:500,prazo:'Dez/2026',cor:'#60a5fa'},
     {id:4,n:'Moradia ≤ 35% das despesas',tipo:'reduzir',alvo:35,atual:null,prazo:'Jun/2026',cor:'#a78bfa'},
   ],
-  metaSeq:5,trxExtra:[],trxSeq:1,importedRaw:null,dataSource:'sample'
+  metaSeq:5,trxExtra:[],trxSeq:1,importedRaw:null,dataSource:'empty'
 };
 function openDB(){return new Promise((res,rej)=>{if(_db){res(_db);return;}const r=indexedDB.open(DB_NAME,DB_VERSION);r.onupgradeneeded=e=>{if(!e.target.result.objectStoreNames.contains(STORE))e.target.result.createObjectStore(STORE);};r.onsuccess=e=>{_db=e.target.result;res(_db);};r.onerror=e=>rej(e.target.error);});}
 async function loadState(){try{const db=await openDB();const r=await new Promise((ok,err)=>{const q=db.transaction(STORE,'readonly').objectStore(STORE).get(STATE_KEY);q.onsuccess=()=>ok(q.result);q.onerror=()=>err(q.error);});return r||JSON.parse(JSON.stringify(DEFAULT_STATE));}catch(e){return JSON.parse(JSON.stringify(DEFAULT_STATE));}}
@@ -686,17 +679,29 @@ function closeM(id){document.getElementById(id).classList.remove('open');}
 function trxTable(trxs){if(!trxs||!trxs.length)return'<p style="color:var(--muted);font-size:13px">Sem registros.</p>';return'<table><thead><tr><th>Descrição</th><th>Categoria</th><th>Valor</th></tr></thead><tbody>'+trxs.map(t=>`<tr><td class="nm">${t.t}</td><td>${t.c}</td><td style="color:${t.v>=0?'#22c55e':'#ef4444'};font-family:'DM Mono',monospace;font-weight:500">${t.v>=0?'+':'-'}${brl(t.v)}</td></tr>`).join('')+'</tbody></table>';}
 
 function initRAW(){
-  RAW = importedRaw ? importedRaw : SAMPLE_RAW;
+  RAW = (importedRaw && importedRaw.length) ? importedRaw : [];
   MESES = RAW.map(x=>x.m);
   LABELS = RAW.map(x=>x.l);
-  curMes = MESES[MESES.length-1];
+  curMes = MESES.length ? MESES[MESES.length-1] : '';
   // Update header meta
-  if(RAW.length){
-    document.getElementById('hdr-meta').innerHTML=`${RAW[0].l} — ${RAW[RAW.length-1].l} &nbsp;<span id="save-ind"></span>`;
+  const metaEl = document.getElementById('hdr-meta');
+  if(metaEl){
+    if(RAW.length){
+      metaEl.innerHTML=`${RAW[0].l} — ${RAW[RAW.length-1].l} &nbsp;<span id="save-ind"></span>`;
+    } else {
+      metaEl.innerHTML='Nenhum dado importado &nbsp;<span id="save-ind"></span>';
+    }
   }
   // Update data source badge
   const b=document.getElementById('datasrc-badge');
-  if(b){b.className='src-badge '+dataSource;b.textContent='● '+({sample:'dados de exemplo',xlsx:'Excel importado',gsheets:'Google Sheets',ofx:'OFX importado'}[dataSource]||dataSource);}
+  if(b){
+    if(!RAW.length){
+      b.className='src-badge sample';b.textContent='● sem dados';
+    } else {
+      b.className='src-badge '+dataSource;
+      b.textContent='● '+({xlsx:'Excel importado',gsheets:'Google Sheets',ofx:'OFX importado'}[dataSource]||dataSource);
+    }
+  }
 }
 
 // ============================================================
@@ -716,7 +721,23 @@ function renderSec(id){if(id==='visao')renderVisao();else if(id==='orc')renderOr
 // VISÃO GERAL
 // ============================================================
 function renderVisao(){
-  if(!RAW.length)return;
+  if(!RAW.length){
+    document.getElementById('v-rec').textContent='—';
+    document.getElementById('v-desp').textContent='—';
+    document.getElementById('v-res').textContent='—';
+    document.getElementById('v-poup').textContent='—';
+    document.getElementById('v-rec-s').textContent='';
+    document.getElementById('v-desp-s').textContent='';
+    document.getElementById('v-res-s').textContent='';
+    document.getElementById('v-poup-s').textContent='';
+    document.getElementById('insights').innerHTML=`
+      <div class="ins info">
+        <span class="ico">ℹ</span>
+        <span class="msg"><strong>Nenhum dado importado ainda.</strong> Acesse a aba <strong>⊕ Importar dados</strong> para carregar sua planilha Excel, conectar ao Google Sheets ou importar um extrato OFX do seu banco.</span>
+      </div>`;
+    ['ch-vbar','ch-vres'].forEach(id=>{dc(id);const canvas=document.getElementById(id);if(canvas){const ctx=canvas.getContext('2d');ctx.clearRect(0,0,canvas.width,canvas.height);}});
+    return;
+  }
   const rows=getMeses();const{r,d,res}=agg(rows);const pp=r>0?(res/r*100):0,dpct=r>0?(d/r*100):0;
   document.getElementById('v-rec').textContent=brl(r);document.getElementById('v-rec-s').textContent=rows.length>1?rows.length+' meses':'Mês selecionado';
   document.getElementById('v-desp').textContent=brl(d);const ds=document.getElementById('v-desp-s');ds.textContent=dpct.toFixed(1)+'% da receita';ds.className='ks '+(dpct>70?'bad':dpct>60?'warn':'ok');
