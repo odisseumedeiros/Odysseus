@@ -757,7 +757,7 @@ jan    | 2026 | 2026-01-10 | padaria         | alimentação        | cafeterias
       <div style="font-size:13px;font-weight:500;color:var(--text)" id="ai-profile-name">Perfil não configurado</div>
       <div style="font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="ai-profile-goals"></div>
     </div>
-    <span id="ai-model-badge" class="badge bl" style="flex-shrink:0">Gemini 2.0 Flash</span>
+    <span id="ai-model-badge" class="badge bl" style="flex-shrink:0" id="ai-model-badge-main">Gemini 2.0 Flash</span>
   </div>
 
   <!-- Suggested questions -->
@@ -1125,6 +1125,17 @@ jan    | 2026 | 2026-01-10 | padaria         | alimentação        | cafeterias
         </div>
         <div id="ai-key-status" style="font-size:12px;margin-top:6px"></div>
       </div>
+      <div class="field">
+        <label>Modelo</label>
+        <select id="ai-model-select">
+          <option value="gemini-2.0-flash">Gemini 2.0 Flash (recomendado)</option>
+          <option value="gemini-1.5-flash">Gemini 1.5 Flash (cota separada)</option>
+          <option value="gemini-1.5-flash-8b">Gemini 1.5 Flash 8B (mais leve)</option>
+          <option value="gemini-1.5-pro">Gemini 1.5 Pro (mais capaz, mais lento)</option>
+          <option value="gemini-2.0-flash-lite">Gemini 2.0 Flash Lite (mais rápido)</option>
+        </select>
+        <div style="font-size:11px;color:var(--muted);margin-top:5px">Cada modelo tem cota independente. Se um estiver esgotado, tente outro.</div>
+      </div>
 
       <div style="border-top:1px solid var(--border);padding-top:1rem;margin-top:.25rem">
         <p style="font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:.75rem">Perfil do usuário</p>
@@ -1263,7 +1274,7 @@ const DEFAULT_STATE={
     {id:11,nome:'Renda',            cor:'#22c55e', tipo:'rec'},
     {id:12,nome:'Transferências',   cor:'#94a3b8', tipo:'ambos'},
   ], catSeq:13,
-  aiProfile:{name:'',goals:'',context:'',geminiKey:''},
+  aiProfile:{name:'',goals:'',context:'',geminiKey:'',model:'gemini-2.0-flash'},
   aiHistory:[]
 };
 function openDB(){return new Promise((res,rej)=>{if(_db){res(_db);return;}const r=indexedDB.open(DB_NAME,DB_VERSION);r.onupgradeneeded=e=>{if(!e.target.result.objectStoreNames.contains(STORE))e.target.result.createObjectStore(STORE);};r.onsuccess=e=>{_db=e.target.result;res(_db);};r.onerror=e=>rej(e.target.error);});}
@@ -2817,7 +2828,7 @@ function saveMetaUpdate(){
 // ASSISTENTE IA — GEMINI
 // ============================================================
 
-const GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+function geminiURL(){ return 'https://generativelanguage.googleapis.com/v1beta/models/'+(aiProfile.model||'gemini-2.0-flash')+':generateContent'; }
 
 // Build financial context snapshot for the AI
 function buildFinancialContext(){
@@ -2991,7 +3002,7 @@ async function sendAI(){
       parts:[{text: msg.text}]
     }));
 
-    const resp = await fetch(`${GEMINI_URL}?key=${aiProfile.geminiKey}`, {
+    const resp = await fetch(`${geminiURL()}?key=${aiProfile.geminiKey}`, {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
@@ -3033,6 +3044,7 @@ function clearAIHistory(){
 // Config modal
 function openAIConfig(){
   document.getElementById('ai-key-input').value   = aiProfile.geminiKey||'';
+  const ms=document.getElementById('ai-model-select');if(ms)ms.value=aiProfile.model||'gemini-2.0-flash';
   document.getElementById('ai-name-input').value  = aiProfile.name||'';
   document.getElementById('ai-goals-input').value = aiProfile.goals||'';
   document.getElementById('ai-context-input').value = aiProfile.context||'';
@@ -3046,7 +3058,7 @@ async function testGeminiKey(){
   if(!key){ status.textContent='Cole uma chave primeiro.'; status.style.color='var(--muted)'; return; }
   status.textContent='Testando...'; status.style.color='var(--muted)';
   try{
-    const r = await fetch(`${GEMINI_URL}?key=${key}`,{
+    const r = await fetch(`${geminiURL()}?key=${key}`,{
       method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({contents:[{role:'user',parts:[{text:'Responda apenas: ok'}]}],generationConfig:{maxOutputTokens:5}})
     });
@@ -3057,6 +3069,7 @@ async function testGeminiKey(){
 
 function saveAIConfig(){
   aiProfile.geminiKey = document.getElementById('ai-key-input').value.trim();
+  const ms=document.getElementById('ai-model-select');if(ms)aiProfile.model=ms.value||'gemini-2.0-flash';
   aiProfile.name      = document.getElementById('ai-name-input').value.trim();
   aiProfile.goals     = document.getElementById('ai-goals-input').value.trim();
   aiProfile.context   = document.getElementById('ai-context-input').value.trim();
@@ -3134,7 +3147,7 @@ function updateFloatContext(){
 
   // Status line
   const st = document.getElementById('float-status');
-  if(st) st.textContent = aiProfile.geminiKey ? 'Gemini 2.0 Flash · conectado' : 'Chave não configurada';
+  if(st) st.textContent = aiProfile.geminiKey ? (aiProfile.model||'gemini-2.0-flash')+' · conectado' : 'Chave não configurada';
 }
 
 function renderFloatChips(){
@@ -3241,7 +3254,7 @@ async function sendFloatAI(){
     const secNames = {visao:'Visão Geral',orc:'Orçamento',desp:'Despesas',rec:'Receitas',metas:'Metas',kpis:'KPIs',lanc:'Lançamentos',inv:'Investimentos'};
     const secNote = `\nO usuário está atualmente na seção "${secNames[sec]||sec}" do dashboard.\n`;
 
-    const resp = await fetch(`${GEMINI_URL}?key=${aiProfile.geminiKey}`, {
+    const resp = await fetch(`${geminiURL()}?key=${aiProfile.geminiKey}`, {
       method:'POST', headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
         system_instruction:{ parts:[{text: buildSystemPrompt() + secNote}] },
