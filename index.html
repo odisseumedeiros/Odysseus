@@ -602,30 +602,15 @@ jan    | 2026 | 2026-01-10 | padaria         | alimentação        | cafeterias
       <div class="card-title">Importar extrato OFX (Open Financial Exchange)</div>
       <div class="ins info" style="margin-bottom:1rem">
         <span class="ico">ℹ</span>
-        <span class="msg">Arquivos OFX são exportados diretamente pelos bancos (Nubank, Itaú, Bradesco, etc.). Após o upload, você <strong>classifica manualmente</strong> cada lançamento antes de confirmar.</span>
+        <span class="msg">Faça upload do OFX. As transações são importadas automaticamente com categoria sugerida e vão direto para a <strong>Conciliação Bancária</strong>, onde você vincula ou cria lançamentos.</span>
       </div>
       <div class="import-zone" id="drop-ofx">
         <input type="file" accept=".ofx,.OFX" onchange="handleOFXFile(event)">
         <span class="iz-icon">🏦</span>
         <div class="iz-title">Arraste o arquivo .OFX aqui ou clique para selecionar</div>
-        <div class="iz-sub">Exportado pelo seu banco · Nubank, Itaú, Bradesco, BB, etc.</div>
+        <div class="iz-sub">Importação direta → sem pré-classificação</div>
       </div>
-      <div id="ofx-classify" style="margin-top:1rem;display:none">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;flex-wrap:wrap;gap:8px">
-          <div>
-            <span style="font-size:13px;color:var(--text);font-weight:500">Classifique os lançamentos</span>
-            <span id="ofx-pending-badge" class="badge warn" style="margin-left:8px"></span>
-          </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap">
-            <button class="btn btn-g btn-sm" onclick="autoClassifyOFX()">✨ Auto-classificar</button>
-            <button class="btn btn-p btn-sm" onclick="confirmOFXImport()">Confirmar importação</button>
-          </div>
-        </div>
-        <div class="ofx-row header">
-          <span>Data</span><span>Descrição</span><span>Valor</span><span>Categoria</span><span></span>
-        </div>
-        <div id="ofx-rows"></div>
-      </div>
+
     </div>
     <div class="card">
       <div class="card-title">Como exportar OFX do seu banco</div>
@@ -2008,6 +1993,26 @@ function confirmGSheetsImport(){
 // IMPORT — OFX
 // ============================================================
 let _pendingOFX=[];
+
+function autoDetectCat(memo){
+  const rules=[
+    {kw:['uber','taxi','99','cabify'],cat:'Transporte'},
+    {kw:['restaurante','lanche','pizza','sushi','mcdonalds','burger','ifood','rappi','padaria','cafe','jantar','almoco','delivery'],cat:'Alimentação'},
+    {kw:['mercado','supermercado','carrefour','extra','pao de acucar','atacadao','hortifruti'],cat:'Alimentação'},
+    {kw:['salario','salário','pagamento','credito em conta','deposito','folha'],cat:'Renda'},
+    {kw:['aluguel','condominio','iptu','seguro imovel'],cat:'Moradia'},
+    {kw:['faculdade','escola','curso','mensalidade','ead','graduacao'],cat:'Educação'},
+    {kw:['farmacia','drogaria','hospital','clinica','medico','exame'],cat:'Saúde'},
+    {kw:['academia','gym','crossfit'],cat:'Saúde'},
+    {kw:['netflix','spotify','amazon prime','disney','youtube','prime video'],cat:'Assinaturas'},
+    {kw:['emprestimo','financiamento','parcela credito'],cat:'Empréstimos'},
+    {kw:['shopping','roupa','zara','renner','c&a','riachuelo'],cat:'Compras e lazer'},
+    {kw:['cinema','teatro','show','ingresso'],cat:'Compras e lazer'},
+  ];
+  const m=(memo||'').toLowerCase();
+  for(const rule of rules){ if(rule.kw.some(k=>m.includes(k))) return rule.cat; }
+  return '';
+}
 function handleOFXFile(e){
   const file=e.target.files[0];if(!file)return;
   const reader=new FileReader();
@@ -2015,9 +2020,20 @@ function handleOFXFile(e){
     try{
       const trxs=parseOFX(ev.target.result);
       if(!trxs.length){alert('Nenhuma transação encontrada no arquivo OFX.');return;}
-      _pendingOFX=trxs.map((t,i)=>({...t,id:i,skip:false,cat:''}));
-      renderOFXRows();
-      document.getElementById('ofx-classify').style.display='block';
+      // Auto-classify and import straight to conciliation — no manual step
+      const all=trxs.map((t,i)=>({...t,id:i,skip:false,cat:autoDetectCat(t.memo)||'Outros'}));
+      all.forEach(t=>{
+        const key=t.date+'|'+t.memo+'|'+t.val;
+        if(!ofxEntries.find(e=>e.key===key)){
+          ofxEntries.push({id:ofxSeq++,key,date:t.date,memo:t.memo,val:t.val,cat:t.cat,conciliadoId:null});
+        }
+      });
+      saveState();
+      // Go straight to Lançamentos → Conciliação
+      const lancBtn=document.querySelector('.nb[onclick*=lanc]');
+      if(lancBtn) showSec('lanc',lancBtn);
+      setLancTab('concil',document.getElementById('lanc-tab-concil'));
+      alert('✓ '+all.length+' transações importadas. Concilie na aba abaixo.');
     }catch(err){alert('Erro ao ler OFX: '+err.message);}
   };
   reader.readAsText(file,'latin1');
@@ -2047,7 +2063,7 @@ function renderOFXRows(){
       <span style="font-family:'DM Mono',monospace;font-size:12px;color:${t.val>=0?'#22c55e':'#ef4444'};font-weight:500">${t.val>=0?'+':''}${brl(t.val)}</span>
       <select onchange="setOFXCat(${t.id},this.value)" style="font-size:12px;background:var(--bg3);border:1px solid var(--border2);border-radius:7px;padding:4px 6px;color:var(--text);outline:none">
         <option value="">-- Categoria --</option>
-        ${ALL_CATS.map(c=>`<option value="${c}" ${t.cat===c?'selected':''}>${c}</option>`).join('')}
+        ${cats.map(x=>x.nome).map(nm=>`<option value="${nm}" ${t.cat===nm?'selected':''}>${nm}</option>`).join('')}
       </select>
       <button class="ofx-skip ${t.skip?'skipped':''}" onclick="toggleOFXSkip(${t.id})" title="${t.skip?'Incluir':'Ignorar'}">×</button>
     </div>`).join('');
@@ -2100,9 +2116,11 @@ function confirmOFXImport(){
   const newRaw=mergeOFXIntoRAW(all);
   importedRaw=newRaw;dataSource='ofx';
   saveState();initRAWWithExtras();
+  // Go straight to Lançamentos → Conciliação tab
+  const lancBtn = document.querySelector('.nb[onclick*=lanc]');
+  if(lancBtn){ showSec('lanc', lancBtn); }
+  setLancTab('concil', document.getElementById('lanc-tab-concil'));
   document.getElementById('ofx-classify').style.display='none';
-  alert('✓ '+all.length+' transações OFX salvas. Acesse a aba Lançamentos → Conciliação para vincular.');
-  showSec('lanc',document.querySelector('.nb[onclick*=lanc]'));renderLanc();
 }
 function mergeOFXIntoRAW(trxList){
   const monthMap={};
@@ -2341,7 +2359,12 @@ function saveLanc(){
     const newLanc = trxExtra[trxExtra.length-1];
     if(newLanc){ const entry=ofxEntries.find(e=>e.id===ofxId); if(entry){entry.conciliadoId=newLanc.id;saveState();} }
     document.getElementById('lanc-edit-id').dataset.ofxId='';
-    setTimeout(()=>{ setLancTab('concil',document.getElementById('lanc-tab-concil')); },150);
+    // Return to concil tab
+    setTimeout(()=>{
+      const lancBtn=document.querySelector('.nb[onclick*=lanc]');
+      if(lancBtn) showSec('lanc',lancBtn);
+      setLancTab('concil',document.getElementById('lanc-tab-concil'));
+    },150);
   }
 }
 
@@ -3049,26 +3072,28 @@ function autoConcil(){
   else alert('Nenhuma correspondência unívoca encontrada. Vincule manualmente.');
 }
 
-// Create a new lançamento from OFX entry
+// Create a new lançamento from OFX entry — opens modal, stays on concil after save
 function createFromOFX(ofxId){
   const ofx = ofxEntries.find(e=>e.id===ofxId);
   if(!ofx) return;
-  // Pre-fill the add modal
   const parts = ofx.date.split('/');
   const isoDate = parts.length===3 ? `${parts[2]}-${parts[1]}-${parts[0]}` : todayISO();
+  // Reset and pre-fill modal
   document.getElementById('lanc-edit-id').value = '';
-  document.getElementById('m-lanc-title').textContent = 'Novo lançamento (do OFX)';
-  document.getElementById('lanc-data').value = isoDate;
-  document.getElementById('lanc-tipo').value = ofx.val < 0 ? 'desp' : 'rec';
-  document.getElementById('lanc-desc').value = ofx.memo;
-  document.getElementById('lanc-obs').value  = 'Importado do OFX';
-  document.getElementById('lanc-valor').value = Math.abs(ofx.val);
-  document.getElementById('lanc-rep').value  = 'none';
-  updateLancTipoUI();
-  document.getElementById('lanc-cat').value = ofx.cat||'Outros';
-  // Store OFX id to auto-link after save
   document.getElementById('lanc-edit-id').dataset.ofxId = ofxId;
-  setLancTab('manual', document.getElementById('lanc-tab-manual'));
+  document.getElementById('m-lanc-title').textContent = 'Criar lançamento — ' + ofx.memo;
+  document.getElementById('lanc-data').value  = isoDate;
+  document.getElementById('lanc-tipo').value  = ofx.val < 0 ? 'desp' : 'rec';
+  document.getElementById('lanc-desc').value  = ofx.memo;
+  document.getElementById('lanc-obs').value   = '';
+  document.getElementById('lanc-valor').value = Math.abs(ofx.val);
+  document.getElementById('lanc-rep').value   = 'none';
+  document.getElementById('lanc-rep-meses').value = '12';
+  toggleRepMeses();
+  updateLancTipoUI();
+  // Set category from OFX if available
+  const catEl = document.getElementById('lanc-cat');
+  if(ofx.cat && [...catEl.options].find(o=>o.value===ofx.cat)) catEl.value = ofx.cat;
   openM('m-lanc-add');
 }
 
