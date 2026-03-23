@@ -337,7 +337,7 @@ td.nm{color:var(--text)}
   <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:1rem;margin-bottom:1rem">
     <div class="kpi g"><div class="kl">Receita</div><div class="kv gc" id="v-rec">—</div><div class="ks" id="v-rec-s">—</div></div>
     <div class="kpi r"><div class="kl">Despesa</div><div class="kv rc" id="v-desp">—</div><div class="ks" id="v-desp-s">—</div></div>
-    <div class="kpi b"><div class="kl">Resultado</div><div class="kv" id="v-res">—</div><div class="ks" id="v-res-s">—</div></div>
+    <div class="kpi" id="v-res-card"><div class="kl" id="v-res-label">Resultado</div><div class="kv" id="v-res">—</div><div class="ks" id="v-res-s">—</div></div>
     <div class="kpi n"><div class="kl">Poupança</div><div class="kv" id="v-poup">—</div><div class="ks" id="v-poup-s">—</div></div>
     <div class="kpi y" style="cursor:pointer" onclick="toggleSaldoDetail()" title="Clique para detalhar">
       <div class="kl">Saldo acumulado</div>
@@ -1507,13 +1507,32 @@ function renderVisao(){
   const rows=getMeses();const{r,d,res}=agg(rows);const pp=r>0?(res/r*100):0,dpct=r>0?(d/r*100):0;
   document.getElementById('v-rec').textContent=brl(r);document.getElementById('v-rec-s').textContent=rows.length>1?rows.length+' meses':'Mês selecionado';
   document.getElementById('v-desp').textContent=brl(d);const ds=document.getElementById('v-desp-s');ds.textContent=dpct.toFixed(1)+'% da receita';ds.className='ks '+(dpct>70?'bad':dpct>60?'warn':'ok');
-  const re=document.getElementById('v-res');re.textContent=(res>=0?'+':'')+brl(res);re.className='kv '+(res>=0?'gc':'rc');
-  document.getElementById('v-res-s').textContent=res>=0?'Superávit':'Déficit';document.getElementById('v-res-s').className='ks '+(res>=0?'ok':'bad');
-  const pe=document.getElementById('v-poup');pe.textContent=pct(pp);pe.className='kv '+(pp>=25?'gc':pp>=10?'yc':'rc');
-  document.getElementById('v-poup-s').textContent=pp>=25?'Acima da meta (25%)':pp>=10?'Abaixo da meta':'Crítico';document.getElementById('v-poup-s').className='ks '+(pp>=25?'ok':pp>=10?'warn':'bad');
+  const re=document.getElementById('v-res');
+  const resCard=document.getElementById('v-res-card');
+  const resLabel=document.getElementById('v-res-label');
+  if(r>0&&d>0){
+    const surplus=res>=0;
+    re.textContent=(surplus?'+':'')+brl(res);
+    re.className='kv '+(surplus?'gc':'rc');
+    resLabel.textContent=surplus?'Superávit':'Déficit';
+    resCard.className='kpi '+(surplus?'g':'r');
+    document.getElementById('v-res-s').textContent=surplus?'Receita acima da despesa':'Despesa acima da receita';
+    document.getElementById('v-res-s').className='ks '+(surplus?'ok':'bad');
+  } else {
+    re.textContent=r>0?'+'+brl(r):d>0?'-'+brl(d):'—';
+    re.className='kv wc';
+    resLabel.textContent='Resultado';
+    resCard.className='kpi n';
+    document.getElementById('v-res-s').textContent=r>0?'Só receita lançada':d>0?'Só despesa lançada':'';
+    document.getElementById('v-res-s').className='ks';
+  }
+  const pe=document.getElementById('v-poup');
+  if(r>0){ pe.textContent=pct(pp); pe.className='kv '+(pp>=25?'gc':pp>=10?'yc':'rc'); document.getElementById('v-poup-s').textContent=pp>=25?'Acima da meta (25%)':pp>=10?'Abaixo da meta':'Crítico'; document.getElementById('v-poup-s').className='ks '+(pp>=25?'ok':pp>=10?'warn':'bad'); }
+  else { pe.textContent='—'; pe.className='kv wc'; document.getElementById('v-poup-s').textContent=''; }
   // Saldo acumulado = soma de todos os resultados do período completo (não só rows filtradas)
   const saldoRows = RAW;
-  const saldoTotal = saldoRows.reduce((s,x)=>s+(x.r-x.d),0);
+  // Only count months with actual transactions (both r and d present, or at least one non-zero)
+  const saldoTotal = saldoRows.filter(x=>x.r>0||x.d>0).reduce((s,x)=>s+(x.r-x.d),0);
   const saldoInvest = investimentos.reduce((s,x)=>s+x.atual,0);
   const saldoPatrim = saldoTotal + saldoInvest;
   const sv = document.getElementById('v-saldo');
@@ -1548,8 +1567,9 @@ function renderVisao(){
   if(morT/tD>.4)ins.push({t:'warn',m:`<strong>Moradia: ${pct(morT/tD*100)} das despesas</strong> (${brl(morT)}). Acima do ideal de 35%.`});
   if(empT>0)ins.push({t:'warn',m:`<strong>Empréstimos: ${brl(empT)} no período.</strong> Priorize a quitação.`});
   if(lazT/tD>.2)ins.push({t:'warn',m:`<strong>Compras e lazer: ${pct(lazT/tD*100)} das despesas.</strong> Acima do recomendado de 15%.`});
-  const best=RAW.reduce((a,b)=>(a.r-a.d)>(b.r-b.d)?a:b);
-  ins.push({t:'ok',m:`<strong>Melhor mês: ${best.l}</strong> com superávit de ${brl(best.r-best.d)}.`});
+  const rawWithData=RAW.filter(x=>x.r>0&&x.d>0);
+  const best=rawWithData.length?rawWithData.reduce((a,b)=>(a.r-a.d)>(b.r-b.d)?a:b):null;
+  if(best){ const bRes=best.r-best.d; ins.push({t:bRes>=0?'ok':'warn',m:`<strong>${bRes>=0?'Melhor superávit':'Melhor resultado'}: ${best.l}</strong> — ${bRes>=0?'+':''}${brl(bRes)}.`}); }
   document.getElementById('insights').innerHTML=ins.map(i=>`<div class="ins ${i.t}"><span class="ico">${i.t==='ok'?'✓':i.t==='warn'?'⚠':'✕'}</span><span class="msg">${i.m}</span></div>`).join('');
 }
 
@@ -1565,7 +1585,29 @@ function setCurMes(m,btn){curMes=m;document.querySelectorAll('.mpill').forEach(b
 function renderOrcMes(){
   const row=RAW.find(x=>x.m===curMes);if(!row)return;
   const cats=Object.entries(row.cat).sort((a,b)=>b[1]-a[1]);const total=cats.reduce((s,[,v])=>s+v,0);
-  document.getElementById('orc-bars').innerHTML=cats.map(([cat,val])=>{const bud=budgets[cat]||0;const pp=total>0?(val/total*100):0;const pb=bud>0?(val/bud*100):null;const col=!pb?(CC[cat]||'#6b7a99'):pb>110?'#ef4444':pb>95?'#f59e0b':'#22c55e';const bi=bud>0?`<span style="font-size:11px;color:${pb>100?'#f87171':pb>95?'#fbbf24':'var(--muted)'};flex-shrink:0;width:90px;text-align:right">${pb>100?'⚠ estouro':'orç. '+brl(bud)}</span>`:'';return`<div class="brow" style="cursor:pointer" onclick="openCatModal('${cat}','${curMes}')"><span class="bl">${cat}</span><div class="bbg"><div class="bf" style="width:${Math.min(100,pp)}%;background:${col}"></div></div><span class="bpct">${pp.toFixed(1)}%</span><span class="bval">${brl(val)}</span>${bi}</div>`;}).join('')+`<p style="font-size:11px;color:var(--muted);margin-top:6px">Clique em uma categoria para ver as transações</p>`;
+  document.getElementById('orc-bars').innerHTML=cats.map(([cat,val])=>{
+    const bud = budgets[cat]||0;
+    const pb  = bud>0 ? (val/bud*100) : null;   // % do orçamento
+    const pp  = total>0 ? (val/total*100) : 0;   // % do total gasto (fallback)
+    // Barra: usa % do orçamento se definido, senão % do total
+    const barW = pb!==null ? Math.min(100, pb) : Math.min(100, pp);
+    const col  = pb===null ? (CC[cat]||'#6b7a99') : pb>100 ? '#ef4444' : pb>80 ? '#f59e0b' : '#22c55e';
+    // Label direito
+    let rightLabel = '';
+    if(bud>0){
+      const pctColor = pb>100?'#f87171':pb>80?'#fbbf24':'var(--muted2)';
+      rightLabel = `<span style="font-size:12px;color:${pctColor};font-family:'DM Mono',monospace;flex-shrink:0;min-width:42px;text-align:right;font-weight:500">${pb.toFixed(0)}%</span>`
+                 + `<span style="font-size:11px;color:var(--muted);flex-shrink:0;text-align:right;white-space:nowrap">${pb>100?'⚠ estouro':'orç. '+brl(bud)}</span>`;
+    } else {
+      rightLabel = `<span class="bpct">${pp.toFixed(1)}%</span>`;
+    }
+    return`<div class="brow" style="cursor:pointer" onclick="openCatModal('${cat}','${curMes}')">
+      <span class="bl">${cat}</span>
+      <div class="bbg"><div class="bf" style="width:${barW}%;background:${col}"></div></div>
+      <span class="bval">${brl(val)}</span>
+      ${rightLabel}
+    </div>`;
+  }).join('')+`<p style="font-size:11px;color:var(--muted);margin-top:6px">Clique em uma categoria para ver as transações</p>`;
   document.getElementById('orc-leg').innerHTML=cats.map(([c])=>`<span><span class="ldot" style="background:${CC[c]||'#6b7a99'}"></span>${c}</span>`).join('');
   mk('ch-orc-pie',{type:'doughnut',data:{labels:cats.map(([c])=>c),datasets:[{data:cats.map(([,v])=>v),backgroundColor:cats.map(([c])=>CC[c]||'#6b7a99'),borderWidth:1,borderColor:'#111827'}]},options:{responsive:true,maintainAspectRatio:false,onClick:(e,els)=>{if(!els.length)return;const[cat,val]=cats[els[0].index];const bud=budgets[cat]||0;openDp('dp-pie','dp-pie-t','dp-pie-b',cat+' — '+row.l,`<div class="kpi n" style="margin-bottom:1rem;padding:.75rem"><div class="kl">Total gasto</div><div class="kv wc" style="font-size:1.1rem">${brl(val)}</div>${bud?`<div class="ks ${val>bud?'bad':'ok'}">${val>bud?'Estouro de '+brl(val-bud):'Economia de '+brl(bud-val)}</div>`:''}</div>`+trxTable((row.trx||[]).filter(t=>t.c===cat&&t.v<0)));},plugins:{legend:{display:false}}}});
   document.getElementById('orc-top').innerHTML=cats.slice(0,6).map(([cat,val],i)=>{const bud=budgets[cat]||0;const pb=bud>0?(val/bud*100):null;const bs=pb?pb>100?'bad':pb>90?'warn':'ok':'bl';const bl=pb?`<span class="badge ${bs}">${pb.toFixed(0)}% do orç.</span>`:'<span class="badge bl">Sem limite</span>';return`<tr class="trow" onclick="openCatModal('${cat}','${curMes}')"><td>${i+1}</td><td class="nm">${cat}</td><td><span class="badge bl">${cat}</span></td><td style="color:#ef4444;font-family:'DM Mono',monospace;font-weight:500">${brl(val)}</td><td>${bl}</td></tr>`;}).join('');
@@ -1708,7 +1750,9 @@ function renderRec(){
   document.getElementById('rec-max').textContent=brl(recs[maxI]);document.getElementById('rec-maxs').textContent=LABELS[maxI];
   document.getElementById('rec-min').textContent=brl(recs[minI]);document.getElementById('rec-mins').textContent=LABELS[minI];
   mk('ch-rec-evo',{type:'line',data:{labels:LABELS,datasets:[{label:'Receita',data:recs,borderColor:'#22c55e',backgroundColor:'rgba(34,197,94,.1)',fill:true,tension:.3,pointRadius:5,pointBackgroundColor:'#22c55e',pointHoverRadius:8}]},options:{responsive:true,maintainAspectRatio:false,onClick:(e,els)=>{if(!els.length)return;const row=RAW[els[0].index];openDp('dp-rec','dp-rec-t','dp-rec-b',row.l+' — Receitas',`<p style="font-size:13px;margin-bottom:1rem;color:var(--muted2)">Total: <strong style="color:#22c55e">${brl(row.r)}</strong></p>`+trxTable((row.trx||[]).filter(t=>t.v>0)));},plugins:{legend:{display:false}},scales:{x:{ticks:{color:'#6b7a99'},grid:{color:'rgba(255,255,255,.04)'}},y:{ticks:{color:'#6b7a99',callback:v=>brlk(v)},grid:{color:'rgba(255,255,255,.04)'}}}}});
-  document.getElementById('rec-table').innerHTML=RAW.map(x=>{const res=x.r-x.d,pp=x.r>0?(res/x.r*100):0;return`<tr><td class="nm">${x.l}</td><td style="color:#22c55e;font-family:'DM Mono',monospace">${brl(x.r)}</td><td style="color:#ef4444;font-family:'DM Mono',monospace">${brl(x.d)}</td><td style="color:${res>=0?'#22c55e':'#ef4444'};font-family:'DM Mono',monospace">${res>=0?'+':''}${brl(res)}</td><td><span class="badge ${pp>=25?'ok':pp>=10?'warn':'bad'}">${pct(pp)}</span></td><td><span class="badge ${res>=0?'ok':'bad'}">${res>=0?'Superávit':'Déficit'}</span></td></tr>`;}).join('');
+  document.getElementById('rec-table').innerHTML=RAW.map(x=>{const res=x.r-x.d,pp=x.r>0?(res/x.r*100):0;
+    const hasData=x.r>0&&x.d>0;
+    return`<tr><td class="nm">${x.l}</td><td style="color:#22c55e;font-family:'DM Mono',monospace">${brl(x.r)}</td><td style="color:#ef4444;font-family:'DM Mono',monospace">${brl(x.d)}</td><td style="color:${res>=0?'#22c55e':'#ef4444'};font-family:'DM Mono',monospace">${hasData?(res>=0?'+':'')+brl(res):'—'}</td><td>${hasData?`<span class="badge ${pp>=25?'ok':pp>=10?'warn':'bad'}">${pct(pp)}</span>`:'<span class="badge gy">—</span>'}</td><td>${hasData?`<span class="badge ${res>=0?'ok':'bad'}">${res>0?'Superávit':'Déficit'}</span>`:'<span class="badge gy">Sem dados</span>'}</td></tr>`;}).join('');
 }
 
 // ============================================================
@@ -1856,16 +1900,21 @@ function renderKPIs(){
   const dR=tR>0?(tD/tR*100):0;
   let morT=0,empT=0;
   rows.forEach(x=>{morT+=(x.cat['Moradia']||0);empT+=(x.cat['Empréstimos']||0);});
-  const best=rows.reduce((a,b)=>(a.r-a.d)>(b.r-b.d)?a:b);
+  // Only consider months with actual revenue for best surplus
+  const rowsWithData = rows.filter(x=>x.r>0||x.d>0);
+  const best = rowsWithData.length
+    ? rowsWithData.reduce((a,b)=>(a.r-a.d)>(b.r-b.d)?a:b)
+    : null;
+  const bestVal  = best ? best.r-best.d : 0;
   const periodLabel=n===1?rows[0].l:rows[0].l+' – '+rows[n-1].l;
 
   document.getElementById('kigrid').innerHTML=[
-    {l:'Taxa de poupança',    v:pct(pp),                      b:'Meta: 25%',           col:pp>=25?'#22c55e':pp>=10?'#f59e0b':'#ef4444'},
-    {l:'Despesas / Receita',  v:pct(dR),                      b:'Ideal: <65%',         col:dR<65?'#22c55e':dR<75?'#f59e0b':'#ef4444'},
-    {l:'Total poupado',       v:brl(Math.max(0,tRes)),         b:periodLabel,           col:'#60a5fa'},
-    {l:'Média poupada/mês',   v:brl(Math.max(0,tRes/n)),       b:n+' mês(es)',          col:'#34d399'},
+    {l:'Taxa de poupança',    v:tR>0?pct(pp):'—',             b:'Meta: 25%',           col:tR>0?(pp>=25?'#22c55e':pp>=10?'#f59e0b':'#ef4444'):'#6b7a99'},
+    {l:'Despesas / Receita',  v:tR>0?pct(dR):'—',             b:'Ideal: <65%',         col:tR>0?(dR<65?'#22c55e':dR<75?'#f59e0b':'#ef4444'):'#6b7a99'},
+    {l:'Total poupado',       v:tR>0?brl(Math.max(0,tRes)):'—', b:periodLabel,         col:'#60a5fa'},
+    {l:'Média poupada/mês',   v:tR>0?brl(Math.max(0,tRes/n)):'—', b:n+' mês(es)',      col:'#34d399'},
     {l:'Empréstimos pagos',   v:brl(empT),                     b:'No período',          col:empT>500?'#f59e0b':'#22c55e'},
-    {l:'Melhor superávit',    v:brl(Math.max(...rows.map(x=>x.r-x.d))), b:best.l,      col:'#22c55e'},
+    {l:best?(bestVal>=0?'Melhor superávit':'Melhor resultado'):'Melhor superávit', v:best?((bestVal>=0?'+':'')+brl(bestVal)):'—', b:best?best.l:'sem dados', col:bestVal>0?'#22c55e':bestVal<0?'#ef4444':'#6b7a99'},
   ].map(k=>`<div class="ki"><div class="kil">${k.l}</div><div class="kiv" style="color:${k.col}">${k.v}</div><div class="kib">${k.b}</div></div>`).join('');
 
   mk('ch-radar',{type:'radar',data:{labels:['Poupança','Controle gastos','Quitação dívidas','Fluxo positivo','Regularidade','Renda'],datasets:[
@@ -1886,7 +1935,7 @@ function renderKPIs(){
   else           diag.push({t:'bad', m:`<strong>Poupança crítica: ${pct(pp)}</strong> em ${periodLabel}. Revisão urgente.`});
   if(empT>0)     diag.push({t:'warn',m:`<strong>Empréstimos: ${brl(empT)}</strong> no período. Quitação prioritária.`});
   if(tD>0&&morT/tD>.4) diag.push({t:'warn',m:`<strong>Moradia: ${pct(morT/tD*100)} das despesas.</strong> Acima do ideal de 35%.`});
-  diag.push({t:'ok',m:`<strong>Melhor mês: ${best.l}</strong> — superávit de ${brl(best.r-best.d)}.`});
+  if(best){ const bRes2=best.r-best.d; diag.push({t:bRes2>=0?'ok':'warn',m:`<strong>${bRes2>=0?'Melhor superávit':'Melhor resultado'}: ${best.l}</strong> — ${bRes2>=0?'+':''}${brl(bRes2)}.`}); }
   document.getElementById('diag').innerHTML=diag.map(d=>`<div class="ins ${d.t}"><span class="ico">${d.t==='ok'?'✓':d.t==='warn'?'⚠':'✕'}</span><span class="msg">${d.m}</span></div>`).join('');
 }
 
@@ -2096,31 +2145,22 @@ function autoClassifyOFX(){
   alert(`Auto-classificação concluída: ${classified}/${total} transações classificadas.`);
 }
 function confirmOFXImport(){
-  const valid=_pendingOFX.filter(t=>!t.skip&&t.cat);
-  const unclass=_pendingOFX.filter(t=>!t.skip&&!t.cat);
-  if(unclass.length>0){if(!confirm(`${unclass.length} transação(ões) sem categoria serão importadas como "Outros". Continuar?`))return;}
   const all=_pendingOFX.filter(t=>!t.skip);
   all.forEach(t=>{if(!t.cat)t.cat='Outros';});
-  // Save to persistent ofxEntries store for conciliation
+  // Save ONLY to ofxEntries — OFX does NOT go into RAW/importedRaw
+  // It will enter the dashboard only when you create/link a manual lançamento
+  let added=0;
   all.forEach(t=>{
-    // avoid duplicates by memo+date+val key
     const key=t.date+'|'+t.memo+'|'+t.val;
     if(!ofxEntries.find(e=>e.key===key)){
-      ofxEntries.push({
-        id:ofxSeq++, key, date:t.date, memo:t.memo,
-        val:t.val, cat:t.cat, conciliadoId:null
-      });
+      ofxEntries.push({id:ofxSeq++, key, date:t.date, memo:t.memo, val:t.val, cat:t.cat, conciliadoId:null});
+      added++;
     }
   });
-  // Merge into RAW
-  const newRaw=mergeOFXIntoRAW(all);
-  importedRaw=newRaw;dataSource='ofx';
-  saveState();initRAWWithExtras();
-  // Go straight to Lançamentos → Conciliação tab
+  saveState();
   const lancBtn = document.querySelector('.nb[onclick*=lanc]');
-  if(lancBtn){ showSec('lanc', lancBtn); }
+  if(lancBtn) showSec('lanc', lancBtn);
   setLancTab('concil', document.getElementById('lanc-tab-concil'));
-  document.getElementById('ofx-classify').style.display='none';
 }
 function mergeOFXIntoRAW(trxList){
   const monthMap={};
