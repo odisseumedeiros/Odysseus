@@ -2335,6 +2335,14 @@ function saveLanc(){
   // Refresh active section
   const active = document.querySelector('.sec.on');
   if(active && active.id !== 'sec-lanc') renderSec(active.id.replace('sec-',''));
+  // Auto-link to OFX entry if created from OFX
+  const ofxId = parseInt(document.getElementById('lanc-edit-id').dataset.ofxId||'');
+  if(ofxId && !editId){
+    const newLanc = trxExtra[trxExtra.length-1];
+    if(newLanc){ const entry=ofxEntries.find(e=>e.id===ofxId); if(entry){entry.conciliadoId=newLanc.id;saveState();} }
+    document.getElementById('lanc-edit-id').dataset.ofxId='';
+    setTimeout(()=>{ setLancTab('concil',document.getElementById('lanc-tab-concil')); },150);
+  }
 }
 
 // Delete flow
@@ -3095,25 +3103,7 @@ function renderLinkResults(q){
     : '<p style="color:var(--muted);font-size:13px;padding:1rem">Nenhum lançamento encontrado.</p>';
 }
 
-// Hook into saveLanc to auto-link if creating from OFX
-const _origSaveLanc = saveLanc;
-function saveLanc(){
-  const ofxId = parseInt(document.getElementById('lanc-edit-id').dataset.ofxId||'');
-  _origSaveLanc();
-  if(ofxId){
-    // Find the newly created lançamento (last one added)
-    const newLanc = trxExtra[trxExtra.length-1];
-    if(newLanc){
-      const entry = ofxEntries.find(e=>e.id===ofxId);
-      if(entry){ entry.conciliadoId=newLanc.id; saveState(); }
-    }
-    document.getElementById('lanc-edit-id').dataset.ofxId='';
-    // Switch back to concil tab
-    setTimeout(()=>{
-      setLancTab('concil', document.getElementById('lanc-tab-concil'));
-    }, 100);
-  }
-}
+
 
 
 function toggleRepMeses(){
