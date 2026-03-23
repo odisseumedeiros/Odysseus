@@ -391,25 +391,47 @@ td.nm{color:var(--text)}
 
 <!-- ===== DESPESAS ===== -->
 <div id="sec-desp" class="sec">
-  <p class="stitle">Despesas</p><p class="ssub">Evolução por categoria · clique para detalhar transações</p>
+  <p class="stitle">Despesas</p>
+  <p class="ssub">Evolução por categoria · clique num ponto para ver as transações</p>
+
   <div class="card">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;flex-wrap:wrap;gap:8px">
-      <div class="card-title" style="margin:0" id="desp-evo-title">Receitas vs Despesas por mês</div>
-      <div style="display:flex;gap:4px;background:var(--bg3);border-radius:9px;padding:3px;border:1px solid var(--border)">
-        <button class="pfbtn on" id="desp-toggle-rv" onclick="setDespView('rv',this)">Rec vs Desp</button>
-        <button class="pfbtn"    id="desp-toggle-cat" onclick="setDespView('cat',this)">Por categoria</button>
+      <div class="card-title" style="margin:0" id="desp-evo-title">Evolução por categoria</div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <select id="desp-cat-filter" onchange="renderDespEvo()"
+          style="padding:4px 10px;border-radius:8px;background:var(--bg3);border:1px solid var(--border2);
+                 color:var(--text);font-size:12px;outline:none;font-family:'Sora',sans-serif">
+          <option value="">Todas as categorias</option>
+        </select>
+        <button id="desp-clear-filter" onclick="clearDespFilter()"
+          style="display:none;padding:3px 9px;border-radius:7px;border:1px solid rgba(239,68,68,.3);
+                 background:var(--rdim);color:#f87171;font-size:11px;cursor:pointer;font-family:'Sora',sans-serif">
+          × limpar
+        </button>
       </div>
     </div>
     <div class="leg" id="desp-leg"></div>
-    <div class="ch" style="height:250px"><canvas id="ch-desp-evo"></canvas></div>
-    <div class="dpanel" id="dp-desp"><button class="dback" onclick="closeDp('dp-desp')">← voltar</button><div class="dpanel-t" id="dp-desp-t"></div><div id="dp-desp-b"></div></div>
+    <div class="ch" style="height:280px"><canvas id="ch-desp-evo"></canvas></div>
+    <div class="dpanel" id="dp-desp">
+      <button class="dback" onclick="closeDp('dp-desp')">← voltar</button>
+      <div class="dpanel-t" id="dp-desp-t"></div>
+      <div id="dp-desp-b"></div>
+    </div>
   </div>
+
   <div class="g2">
-    <div class="card"><div class="card-title">Ranking acumulado</div><div id="desp-rank"></div></div>
+    <div class="card">
+      <div class="card-title" id="desp-rank-title">Ranking acumulado</div>
+      <div id="desp-rank"></div>
+    </div>
     <div class="card">
       <div class="card-title">Total por mês — clique para detalhar</div>
       <div class="ch" style="height:230px"><canvas id="ch-desp-comp"></canvas></div>
-      <div class="dpanel" id="dp-dcomp"><button class="dback" onclick="closeDp('dp-dcomp')">← voltar</button><div class="dpanel-t" id="dp-dcomp-t"></div><div id="dp-dcomp-b"></div></div>
+      <div class="dpanel" id="dp-dcomp">
+        <button class="dback" onclick="closeDp('dp-dcomp')">← voltar</button>
+        <div class="dpanel-t" id="dp-dcomp-t"></div>
+        <div id="dp-dcomp-b"></div>
+      </div>
     </div>
   </div>
 </div>
@@ -1486,72 +1508,106 @@ document.getElementById('btn-orc-cfg').onclick=openBudgetM;
 // ============================================================
 // DESPESAS
 // ============================================================
-let _despView = 'rv'; // 'rv' = receita vs despesa, 'cat' = por categoria
+let _despCatFilter = ''; // '' = all, or specific category name
 
-function setDespView(view, btn){
-  _despView = view;
-  document.querySelectorAll('#desp-toggle-rv, #desp-toggle-cat').forEach(b=>b.classList.remove('on'));
-  btn.classList.add('on');
+function clearDespFilter(){
+  _despCatFilter = '';
+  const sel = document.getElementById('desp-cat-filter');
+  if(sel) sel.value = '';
   renderDespEvo();
 }
 
 function renderDespEvo(){
-  const legEl   = document.getElementById('desp-leg');
-  const titleEl = document.getElementById('desp-evo-title');
+  const rows     = getMeses();
+  const legEl    = document.getElementById('desp-leg');
+  const titleEl  = document.getElementById('desp-evo-title');
+  const filterEl = document.getElementById('desp-cat-filter');
+  const clearBtn = document.getElementById('desp-clear-filter');
 
-  if(_despView === 'rv'){
-    // Receitas vs Despesas por mês — two lines
-    titleEl.textContent = 'Receitas vs Despesas por mês';
-    legEl.innerHTML = `
-      <span><span class="ldot" style="background:#22c55e"></span>Receita</span>
-      <span><span class="ldot" style="background:#ef4444"></span>Despesa</span>`;
-    const _dRows=getMeses(); const evo = mk('ch-desp-evo',{type:'bar',data:{labels:_dRows.map(x=>x.l),datasets:[
-      {label:'Receita', data:_dRows.map(x=>x.r), backgroundColor:'rgba(34,197,94,.7)', borderRadius:4},
-      {label:'Despesa', data:_dRows.map(x=>x.d), backgroundColor:'rgba(239,68,68,.7)',  borderRadius:4},
-    ]},options:{responsive:true,maintainAspectRatio:false,
-      onClick:(e,els)=>{
-        if(!els.length)return;
-        const row=_dRows[els[0].index];
-        const isRec=els[0].datasetIndex===0;
-        const trxs=(row.trx||[]).filter(t=>isRec?t.v>0:t.v<0);
-        openDp('dp-desp','dp-desp-t','dp-desp-b',
-          (isRec?'Receitas':'Despesas')+' — '+row.l,
-          `<div class="g2" style="margin-bottom:1rem">
-            <div class="kpi g" style="padding:.75rem"><div class="kl">Receita</div><div class="kv gc" style="font-size:1.1rem">${brl(row.r)}</div></div>
-            <div class="kpi r" style="padding:.75rem"><div class="kl">Despesa</div><div class="kv rc" style="font-size:1.1rem">${brl(row.d)}</div></div>
-          </div>`+trxTable(trxs));
-      },
-      plugins:{legend:{labels:{boxWidth:10}}},
-      scales:{
-        x:{ticks:{color:'#6b7a99'},grid:{color:'rgba(255,255,255,.04)'}},
-        y:{ticks:{color:'#6b7a99',callback:v=>brlk(v)},grid:{color:'rgba(255,255,255,.04)'}}
-      }}});
-  } else {
-    // Por categoria
-    titleEl.textContent = 'Evolução por categoria — clique no ponto';
-    const _cRows=getMeses();const allCats=[...new Set(_cRows.flatMap(x=>Object.keys(x.cat)))];
-    legEl.innerHTML=allCats.map(c=>`<span><span class="ldot" style="background:${CC[c]||'#6b7a99'}"></span>${c}</span>`).join('');
-    const evo=mk('ch-desp-evo',{type:'line',data:{labels:_cRows.map(x=>x.l),datasets:allCats.map(cat=>({
-      label:cat,data:_cRows.map(x=>x.cat[cat]||0),
-      borderColor:CC[cat]||'#6b7a99',backgroundColor:(CC[cat]||'#6b7a99')+'22',
-      tension:.3,pointRadius:4,fill:false
-    }))},options:{responsive:true,maintainAspectRatio:false,
-      onClick:(e,els)=>{
-        if(!els.length)return;
-        const cat=evo.data.datasets[els[0].datasetIndex].label;
-        const row=_cRows[els[0].index];
-        const val=row.cat[cat]||0;
-        openDp('dp-desp','dp-desp-t','dp-desp-b',cat+' — '+row.l,
-          `<p style="font-size:13px;margin-bottom:1rem;color:var(--muted2)">Total em <strong>${cat}</strong>: <strong style="color:#ef4444">${brl(val)}</strong></p>`+
-          trxTable((row.trx||[]).filter(t=>t.c===cat&&t.v<0)));
-      },
-      plugins:{legend:{labels:{boxWidth:10,font:{size:11}}}},
-      scales:{
-        x:{ticks:{color:'#6b7a99'},grid:{color:'rgba(255,255,255,.04)'}},
-        y:{ticks:{color:'#6b7a99',callback:v=>brlk(v)},grid:{color:'rgba(255,255,255,.04)'}}
-      }}});
+  // Get selected category from dropdown
+  _despCatFilter = filterEl ? filterEl.value : '';
+
+  // Populate category dropdown with all cats from full RAW (not just getMeses)
+  // so filter is stable when period changes
+  const allCats = [...new Set(rows.flatMap(x => Object.keys(x.cat)))].sort();
+
+  if(filterEl){
+    const prev = filterEl.value;
+    filterEl.innerHTML = '<option value="">Todas as categorias</option>' +
+      allCats.map(c => `<option value="${c}" ${c===prev?'selected':''}>${c}</option>`).join('');
+    _despCatFilter = filterEl.value;
   }
+
+  // Show/hide clear button
+  if(clearBtn) clearBtn.style.display = _despCatFilter ? 'inline-block' : 'none';
+
+  const activeCats = _despCatFilter ? [_despCatFilter] : allCats;
+
+  // Update title
+  if(titleEl) titleEl.textContent = _despCatFilter
+    ? `Evolução — ${_despCatFilter}`
+    : 'Evolução por categoria';
+
+  // Legend
+  if(legEl) legEl.innerHTML = activeCats
+    .map(cat => `<span><span class="ldot" style="background:${CC[cat]||'#6b7a99'}"></span>${cat}</span>`)
+    .join('');
+
+  // Chart — single category gets filled area + bigger points for clarity
+  const isSingle = activeCats.length === 1;
+
+  const evo = mk('ch-desp-evo', {
+    type: 'line',
+    data: {
+      labels: rows.map(x => x.l),
+      datasets: activeCats.map(cat => ({
+        label:           cat,
+        data:            rows.map(x => x.cat[cat] || 0),
+        borderColor:     CC[cat] || '#6b7a99',
+        backgroundColor: isSingle ? (CC[cat]||'#6b7a99')+'33' : (CC[cat]||'#6b7a99')+'18',
+        tension:         0.3,
+        pointRadius:     isSingle ? 5 : 3,
+        pointHoverRadius:isSingle ? 8 : 6,
+        fill:            isSingle,
+        borderWidth:     isSingle ? 2.5 : 1.5,
+      }))
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      onClick: (e, els) => {
+        if(!els.length) return;
+        const cat = evo.data.datasets[els[0].datasetIndex].label;
+        const row = rows[els[0].index];
+        const val = row.cat[cat] || 0;
+        const trxs = (row.trx||[]).filter(t => t.c === cat && t.v < 0);
+        openDp('dp-desp','dp-desp-t','dp-desp-b', cat + ' — ' + row.l,
+          `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+            <span style="font-size:13px;color:var(--muted2)">Total gasto</span>
+            <span style="font-family:'DM Mono',monospace;font-size:1.1rem;font-weight:600;color:#ef4444">${brl(val)}</span>
+          </div>` + trxTable(trxs)
+        );
+      },
+      plugins: {
+        legend: {
+          display: !isSingle,
+          labels: { boxWidth: 10, font: { size: 11 } }
+        },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: ${brl(ctx.raw)}`
+          }
+        }
+      },
+      scales: {
+        x: { ticks:{ color:'#6b7a99' }, grid:{ color:'rgba(255,255,255,.04)' } },
+        y: { ticks:{ color:'#6b7a99', callback: v => brlk(v) }, grid:{ color:'rgba(255,255,255,.04)' } }
+      }
+    }
+  });
 }
+
 
 function renderDesp(){
   if(!RAW.length)return;
