@@ -322,7 +322,6 @@ td.nm{color:var(--text)}
   <button class="nb" onclick="showSec('kpis',this)">KPIs</button>
   <button class="nb" onclick="showSec('lanc',this)">✎ Lançamentos</button>
   <button class="nb" onclick="showSec('inv',this)">◈ Investimentos</button>
-  <button class="nb" onclick="showSec('ai',this)">✦ Assistente IA</button>
   <button class="nb" id="nb-import" onclick="showSec('import',this)">⊕ Importar dados</button>
 </nav>
 
@@ -734,64 +733,7 @@ jan    | 2026 | 2026-01-10 | padaria         | alimentação        | cafeterias
 </div>
 
 
-<!-- ===== ASSISTENTE IA ===== -->
-<div id="sec-ai" class="sec">
-  <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:.25rem">
-    <div>
-      <p class="stitle">Assistente IA <span style="font-size:14px;font-weight:400;color:var(--muted);font-family:'Sora',sans-serif">· Gemini</span></p>
-      <p class="ssub" style="margin:0">Converse com a IA sobre suas finanças. Ela conhece seus dados.</p>
-    </div>
-    <button class="cfg-btn" id="btn-ai-config">⚙ Configurar perfil</button>
-  </div>
-
-  <!-- API key warning -->
-  <div id="ai-key-warn" class="ins warn" style="margin:1rem 0;display:none">
-    <span class="ico">⚠</span>
-    <span class="msg"><strong>Chave da API não configurada.</strong> Clique em "Configurar perfil" para adicionar sua chave Gemini gratuita. <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color:var(--accent)">Obter chave →</a></span>
-  </div>
-
-  <!-- Profile summary strip -->
-  <div id="ai-profile-strip" style="display:none;background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:.75rem 1.25rem;margin-bottom:1rem;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-    <div style="width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--accent),#059669);display:flex;align-items:center;justify-content:center;color:#052e16;font-weight:700;font-size:15px;flex-shrink:0" id="ai-avatar">?</div>
-    <div style="flex:1;min-width:0">
-      <div style="font-size:13px;font-weight:500;color:var(--text)" id="ai-profile-name">Perfil não configurado</div>
-      <div style="font-size:12px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis" id="ai-profile-goals"></div>
-    </div>
-    <span id="ai-model-badge" class="badge bl" style="flex-shrink:0" id="ai-model-badge-main">Gemini 2.0 Flash</span>
-  </div>
-
-  <!-- Suggested questions -->
-  <div id="ai-suggestions" style="margin-bottom:1rem">
-    <p style="font-size:12px;color:var(--muted);margin-bottom:.5rem;text-transform:uppercase;letter-spacing:.06em">Sugestões</p>
-    <div style="display:flex;gap:6px;flex-wrap:wrap" id="ai-chips"></div>
-  </div>
-
-  <!-- Chat window -->
-  <div style="background:var(--bg2);border:1px solid var(--border);border-radius:14px;display:flex;flex-direction:column;height:480px">
-    <!-- Messages -->
-    <div id="ai-messages" style="flex:1;overflow-y:auto;padding:1.25rem;display:flex;flex-direction:column;gap:.75rem">
-      <div class="ai-msg ai-msg-bot">
-        <div class="ai-bubble ai-bubble-bot">Olá! Sou o assistente financeiro do Odysseus. Configure seu perfil e me faça perguntas sobre suas finanças — vejo todos os seus dados em tempo real.</div>
-      </div>
-    </div>
-    <!-- Input -->
-    <div style="padding:.75rem 1rem;border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-end">
-      <textarea id="ai-input" placeholder="Pergunte algo sobre suas finanças..." rows="2"
-        style="flex:1;background:var(--bg3);border:1px solid var(--border2);border-radius:10px;padding:9px 12px;color:var(--text);font-family:'Sora',sans-serif;font-size:14px;resize:none;outline:none;line-height:1.5;max-height:120px;overflow-y:auto"
-        onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendAI();}"></textarea>
-      <button onclick="sendAI()" id="ai-send-btn"
-        style="padding:9px 18px;border-radius:10px;border:none;background:var(--accent);color:#052e16;font-family:'Sora',sans-serif;font-size:13px;font-weight:600;cursor:pointer;white-space:nowrap;height:40px;flex-shrink:0;transition:opacity .2s">
-        Enviar
-      </button>
-    </div>
-  </div>
-
-  <!-- Clear history -->
-  <div style="text-align:right;margin-top:.5rem">
-    <button onclick="clearAIHistory()" style="background:none;border:none;cursor:pointer;font-size:12px;color:var(--muted);font-family:'Sora',sans-serif">Limpar conversa</button>
-  </div>
-</div>
-
+  
 </div><!-- /main -->
 <div class="footer">Odysseus · Gestão Financeira Pessoal · IndexedDB</div>
 
@@ -1103,13 +1045,6 @@ jan    | 2026 | 2026-01-10 | padaria         | alimentação        | cafeterias
   </div>
 </div>
 
-<!-- MODAL: Configurar perfil IA -->
-<div class="moverlay" id="m-ai-config">
-  <div class="mdialog" style="max-width:540px">
-    <div class="mhdr">
-      <h3>Configurar Assistente IA</h3>
-      <button class="mclose" onclick="closeM('m-ai-config')">×</button>
-    </div>
     <div class="mbody">
 
       <!-- API Key -->
@@ -1124,15 +1059,6 @@ jan    | 2026 | 2026-01-10 | padaria         | alimentação        | cafeterias
           <button onclick="testGeminiKey()" class="btn btn-g btn-sm" style="white-space:nowrap">Testar</button>
         </div>
         <div id="ai-key-status" style="font-size:12px;margin-top:6px"></div>
-      </div>
-      <div class="field">
-        <label>Modelo</label>
-        <select id="ai-model-select">
-          <option value="gemini-2.0-flash">Gemini 2.0 Flash (recomendado)</option>
-          <option value="gemini-2.0-flash-lite">Gemini 2.0 Flash Lite (mais rápido, mais cota)</option>
-          <option value="gemini-2.5-flash-preview-05-20">Gemini 2.5 Flash Preview (mais inteligente)</option>
-        </select>
-        <div style="font-size:11px;color:var(--muted);margin-top:5px">Se um modelo estiver com cota esgotada, troque para outro. O 2.0 Flash Lite tem limite mais generoso.</div>
       </div>
 
       <div style="border-top:1px solid var(--border);padding-top:1rem;margin-top:.25rem">
@@ -1271,15 +1197,13 @@ const DEFAULT_STATE={
     {id:10,nome:'Outros',           cor:'#6b7a99', tipo:'ambos'},
     {id:11,nome:'Renda',            cor:'#22c55e', tipo:'rec'},
     {id:12,nome:'Transferências',   cor:'#94a3b8', tipo:'ambos'},
-  ], catSeq:13,
-  aiProfile:{name:'',goals:'',context:'',geminiKey:'',model:'gemini-2.0-flash'},
-  aiHistory:[]
+  ], catSeq:13
 };
 function openDB(){return new Promise((res,rej)=>{if(_db){res(_db);return;}const r=indexedDB.open(DB_NAME,DB_VERSION);r.onupgradeneeded=e=>{if(!e.target.result.objectStoreNames.contains(STORE))e.target.result.createObjectStore(STORE);};r.onsuccess=e=>{_db=e.target.result;res(_db);};r.onerror=e=>rej(e.target.error);});}
 async function loadState(){try{const db=await openDB();const r=await new Promise((ok,err)=>{const q=db.transaction(STORE,'readonly').objectStore(STORE).get(STATE_KEY);q.onsuccess=()=>ok(q.result);q.onerror=()=>err(q.error);});return r||JSON.parse(JSON.stringify(DEFAULT_STATE));}catch(e){return JSON.parse(JSON.stringify(DEFAULT_STATE));}}
-async function saveState(){try{const db=await openDB();await new Promise((ok,err)=>{const r=db.transaction(STORE,'readwrite').objectStore(STORE).put({budgets,metas,metaSeq,trxExtra,trxSeq,investimentos,invSeq,cats,catSeq,importedRaw,dataSource,aiProfile,aiHistory},STATE_KEY);r.onsuccess=ok;r.onerror=()=>err(r.error);});showSaved();}catch(e){console.warn('IDB save error',e);}}
+async function saveState(){try{const db=await openDB();await new Promise((ok,err)=>{const r=db.transaction(STORE,'readwrite').objectStore(STORE).put({budgets,metas,metaSeq,trxExtra,trxSeq,investimentos,invSeq,cats,catSeq,importedRaw,dataSource},STATE_KEY);r.onsuccess=ok;r.onerror=()=>err(r.error);});showSaved();}catch(e){console.warn('IDB save error',e);}}
 function showSaved(){const el=document.getElementById('save-ind');if(!el)return;el.textContent='✓ Salvo';el.style.opacity='1';clearTimeout(el._t);el._t=setTimeout(()=>{el.style.opacity='0';},2500);}
-function exportJSON(){const b=new Blob([JSON.stringify({budgets,metas,trxExtra,investimentos,cats,importedRaw,dataSource,at:new Date().toISOString()},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='odysseus_backup_'+new Date().toISOString().slice(0,10)+'.json';a.click();}
+function exportJSON(){const b=new Blob([JSON.stringify({budgets,metas,trxExtra,investimentos,importedRaw,dataSource,at:new Date().toISOString()},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='odysseus_backup_'+new Date().toISOString().slice(0,10)+'.json';a.click();}
 function importJSON(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=async ev=>{try{const d=JSON.parse(ev.target.result);if(d.budgets)budgets=d.budgets;if(d.metas){metas=d.metas;metaSeq=Math.max(...metas.map(m=>m.id),0)+1;}if(d.trxExtra)trxExtra=d.trxExtra;if(d.investimentos){investimentos=d.investimentos;invSeq=Math.max(...investimentos.map(x=>x.id),0)+1;}if(d.cats){cats=d.cats;catSeq=Math.max(...cats.map(x=>x.id),0)+1;}if(d.importedRaw){importedRaw=d.importedRaw;dataSource=d.dataSource||'xlsx';}await saveState();initRAWWithExtras();renderSec(document.querySelector('.sec.on').id.replace('sec-',''));alert('Backup importado com sucesso!');}catch(err){alert('Erro: arquivo inválido.');}};r.readAsText(f);e.target.value='';}
 function resetState(){openM('m-reset');}
 async function confirmReset(){closeM('m-reset');try{const db=await openDB();const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).delete(STATE_KEY);await new Promise(ok=>{tx.oncomplete=ok;});}catch(e){}location.reload();}
@@ -1293,8 +1217,6 @@ let budgets=_s_init.budgets,metas=_s_init.metas,metaSeq=_s_init.metaSeq;
 let trxExtra=_s_init.trxExtra,trxSeq=_s_init.trxSeq;
 let investimentos=[],invSeq=1;
 let cats=_s_init.cats,catSeq=_s_init.catSeq||13;
-let aiProfile=_s_init.aiProfile||{name:'',goals:'',context:'',geminiKey:''};
-let aiHistory=_s_init.aiHistory||[];
 let importedRaw=null,dataSource='sample';
 const charts={};
 let RAW=[],MESES=[],LABELS=[];
@@ -1450,7 +1372,6 @@ function renderSec(id){
   else if(id==='kpis')renderKPIs();
   else if(id==='lanc')renderLanc();
   else if(id==='inv')renderInv();
-  else if(id==='ai')renderAI();
 }
 
 // ============================================================
@@ -2823,476 +2744,6 @@ function saveMetaUpdate(){
 }
 
 // ============================================================
-// ASSISTENTE IA — GEMINI
-// ============================================================
-
-function geminiURL(){ return 'https://generativelanguage.googleapis.com/v1beta/models/'+(aiProfile.model||'gemini-2.0-flash')+':generateContent'; }
-
-// Build financial context snapshot for the AI
-function buildFinancialContext(){
-  const rows = RAW;
-  if(!rows.length) return 'Nenhum dado financeiro importado ainda.';
-  const tR = rows.reduce((s,x)=>s+x.r,0);
-  const tD = rows.reduce((s,x)=>s+x.d,0);
-  const tRes = tR-tD;
-  const pp = tR>0?(tRes/tR*100):0;
-
-  // Category totals
-  const rank={};
-  rows.forEach(x=>Object.entries(x.cat).forEach(([k,v])=>{rank[k]=(rank[k]||0)+v;}));
-  const catLines = Object.entries(rank).sort((a,b)=>b[1]-a[1])
-    .map(([k,v])=>`  - ${k}: R$ ${v.toFixed(2)}`).join('\n');
-
-  // Monthly summary
-  const monthLines = rows.map(x=>{
-    const res=x.r-x.d;
-    return `  - ${x.l}: receita R$${x.r.toFixed(2)}, despesa R$${x.d.toFixed(2)}, resultado ${res>=0?'+':''}R$${res.toFixed(2)}`;
-  }).join('\n');
-
-  // Metas
-  const metaLines = metas.map(m=>{
-    const {pv,desc}=calcMetaPv(m);
-    return `  - ${m.n} (${m.tipo}${m.catAlvo?' / '+m.catAlvo:''}): ${pv}% concluído — ${desc} — prazo: ${m.prazo}`;
-  }).join('\n');
-
-  // Investimentos
-  const invTotal = investimentos.reduce((s,x)=>s+x.atual,0);
-  const invCusto = investimentos.reduce((s,x)=>s+x.custo,0);
-  const invLines = investimentos.map(x=>{
-    const r=x.custo>0?((x.atual-x.custo)/x.custo*100):0;
-    return `  - ${x.nome} (${x.classe}): atual R$${x.atual.toFixed(2)}, rentab. ${r>=0?'+':''}${r.toFixed(1)}%`;
-  }).join('\n');
-
-  // Orçamentos
-  const budLines = Object.entries(budgets).filter(([,v])=>v>0)
-    .map(([k,v])=>`  - ${k}: limite R$${v}`).join('\n');
-
-  return `=== DADOS FINANCEIROS DO USUÁRIO (período: ${rows[0].l} a ${rows[rows.length-1].l}) ===
-
-RESUMO GERAL:
-  - Receita total: R$ ${tR.toFixed(2)}
-  - Despesa total: R$ ${tD.toFixed(2)}
-  - Saldo acumulado: ${tRes>=0?'+':''}R$ ${tRes.toFixed(2)}
-  - Taxa de poupança: ${pp.toFixed(1)}%
-
-DESPESAS POR CATEGORIA:
-${catLines||'  (sem dados)'}
-
-EVOLUÇÃO MENSAL:
-${monthLines}
-
-${metas.length?`METAS FINANCEIRAS:\n${metaLines}\n`:''}
-${investimentos.length?`INVESTIMENTOS (patrimônio: R$${invTotal.toFixed(2)}, investido: R$${invCusto.toFixed(2)}):\n${invLines}\n`:''}
-${Object.values(budgets).some(v=>v>0)?`ORÇAMENTOS CONFIGURADOS:\n${budLines}\n`:''}`;
-}
-
-// Build system prompt with user profile
-function buildSystemPrompt(){
-  const name = aiProfile.name ? `O usuário se chama ${aiProfile.name}.` : '';
-  const goals = aiProfile.goals ? `\nObjetivos declarados: ${aiProfile.goals}` : '';
-  const ctx   = aiProfile.context ? `\nContexto pessoal: ${aiProfile.context}` : '';
-
-  return `Você é um consultor financeiro pessoal especializado e assistente do Odysseus, um app de gestão financeira. 
-Você tem acesso completo aos dados financeiros reais do usuário e deve fornecer insights práticos, diretos e personalizados.
-${name}${goals}${ctx}
-
-INSTRUÇÕES:
-- Responda sempre em português do Brasil
-- Seja direto e prático, sem enrolação
-- Use os dados reais fornecidos para embasar todas as análises
-- Quando identificar problemas, sugira ações concretas e específicas
-- Considere o perfil e objetivos do usuário ao dar recomendações
-- Formate respostas com clareza: use listas quando útil, destaque valores importantes
-- Nunca invente dados que não estejam no contexto
-- Se o usuário pedir para "treinar" ou ajustar seu comportamento, confirme e incorpore na conversa
-
-${buildFinancialContext()}`;
-}
-
-const AI_SUGGESTIONS = [
-  'Onde estou gastando mais do que deveria?',
-  'Estou no caminho certo para minhas metas?',
-  'Como posso aumentar minha taxa de poupança?',
-  'Analise minha carteira de investimentos',
-  'Qual categoria devo cortar primeiro?',
-  'Faça um diagnóstico geral das minhas finanças',
-];
-
-function renderAI(){
-  // Check API key
-  const hasKey = !!(aiProfile.geminiKey && aiProfile.geminiKey.trim());
-  document.getElementById('ai-key-warn').style.display = hasKey ? 'none' : 'flex';
-
-  // Profile strip
-  const strip = document.getElementById('ai-profile-strip');
-  if(aiProfile.name){
-    strip.style.display = 'flex';
-    document.getElementById('ai-avatar').textContent = aiProfile.name.charAt(0).toUpperCase();
-    document.getElementById('ai-profile-name').textContent = aiProfile.name;
-    document.getElementById('ai-profile-goals').textContent = aiProfile.goals||'Sem objetivos definidos';
-  } else {
-    strip.style.display = 'none';
-  }
-
-  // Suggestion chips
-  document.getElementById('ai-chips').innerHTML = AI_SUGGESTIONS.map(s=>
-    `<button class="ai-chip" onclick="askChip(this)">${s}</button>`
-  ).join('');
-
-  // Restore history
-  renderAIMessages();
-}
-
-function renderAIMessages(){
-  const box = document.getElementById('ai-messages');
-  if(!aiHistory.length){
-    box.innerHTML = '<div class="ai-msg ai-msg-bot"><div class="ai-bubble ai-bubble-bot">Olá! Sou o assistente financeiro do Odysseus. Configure seu perfil e me faça perguntas sobre suas finanças — vejo todos os seus dados em tempo real.</div></div>';
-    return;
-  }
-  box.innerHTML = aiHistory.map(msg=>`
-    <div class="ai-msg ai-msg-${msg.role}">
-      <div class="ai-bubble ai-bubble-${msg.role==='user'?'user':msg.error?'error':'bot'}">${escapeHtml(msg.text)}</div>
-    </div>`).join('');
-  box.scrollTop = box.scrollHeight;
-}
-
-function escapeHtml(t){
-  return t.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
-}
-
-function askChip(btn){
-  document.getElementById('ai-input').value = btn.textContent;
-  sendAI();
-}
-
-async function sendAI(){
-  const input = document.getElementById('ai-input');
-  const text  = input.value.trim();
-  if(!text) return;
-
-  if(!aiProfile.geminiKey){
-    openM('m-ai-config');
-    return;
-  }
-
-  input.value = '';
-  const sendBtn = document.getElementById('ai-send-btn');
-  sendBtn.disabled = true;
-  sendBtn.style.opacity = '0.5';
-
-  // Add user message
-  aiHistory.push({role:'user', text});
-  renderAIMessages();
-
-  // Show thinking indicator
-  const box = document.getElementById('ai-messages');
-  const thinking = document.createElement('div');
-  thinking.className = 'ai-thinking';
-  thinking.innerHTML = '<span></span><span></span><span></span><span style="font-size:12px;margin-left:4px">Analisando seus dados...</span>';
-  box.appendChild(thinking);
-  box.scrollTop = box.scrollHeight;
-
-  try {
-    // Build conversation history for Gemini (last 10 turns)
-    const recentHistory = aiHistory.slice(-10);
-    const contents = recentHistory.map(msg=>({
-      role: msg.role==='user' ? 'user' : 'model',
-      parts:[{text: msg.text}]
-    }));
-
-    const resp = await fetch(`${geminiURL()}?key=${aiProfile.geminiKey}`, {
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        system_instruction:{ parts:[{text: buildSystemPrompt()}] },
-        contents,
-        generationConfig:{ temperature:0.7, maxOutputTokens:1024 }
-      })
-    });
-
-    thinking.remove();
-
-    if(!resp.ok){
-      const err = await resp.json().catch(()=>({}));
-      const msg = err?.error?.message || `Erro HTTP ${resp.status}`;
-      aiHistory.push({role:'bot', text:'Erro: '+msg, error:true});
-    } else {
-      const data = await resp.json();
-      const answer = data?.candidates?.[0]?.content?.parts?.[0]?.text || 'Sem resposta.';
-      aiHistory.push({role:'bot', text:answer});
-    }
-  } catch(e){
-    thinking.remove();
-    aiHistory.push({role:'bot', text:'Erro de conexão: '+e.message, error:true});
-  }
-
-  saveState();
-  renderAIMessages();
-  sendBtn.disabled = false;
-  sendBtn.style.opacity = '1';
-}
-
-function clearAIHistory(){
-  if(!confirm('Limpar todo o histórico de conversa?')) return;
-  aiHistory=[];
-  saveState();
-  renderAIMessages();
-}
-
-// Config modal
-function openAIConfig(){
-  document.getElementById('ai-key-input').value   = aiProfile.geminiKey||'';
-  const ms=document.getElementById('ai-model-select');if(ms)ms.value=aiProfile.model||'gemini-2.0-flash';
-  document.getElementById('ai-name-input').value  = aiProfile.name||'';
-  document.getElementById('ai-goals-input').value = aiProfile.goals||'';
-  document.getElementById('ai-context-input').value = aiProfile.context||'';
-  document.getElementById('ai-key-status').textContent='';
-  openM('m-ai-config');
-}
-
-async function testGeminiKey(){
-  const key = document.getElementById('ai-key-input').value.trim();
-  const status = document.getElementById('ai-key-status');
-  if(!key){ status.textContent='Cole uma chave primeiro.'; status.style.color='var(--muted)'; return; }
-  status.textContent='Testando...'; status.style.color='var(--muted)';
-  try{
-    const r = await fetch(`${geminiURL()}?key=${key}`,{
-      method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({contents:[{role:'user',parts:[{text:'Responda apenas: ok'}]}],generationConfig:{maxOutputTokens:5}})
-    });
-    if(r.ok){ status.textContent='✓ Chave válida!'; status.style.color='#22c55e'; }
-    else { const e=await r.json().catch(()=>({})); status.textContent='✕ '+(e?.error?.message||'Chave inválida'); status.style.color='#ef4444'; }
-  }catch(e){ status.textContent='✕ Erro: '+e.message; status.style.color='#ef4444'; }
-}
-
-function saveAIConfig(){
-  aiProfile.geminiKey = document.getElementById('ai-key-input').value.trim();
-  const ms=document.getElementById('ai-model-select');if(ms)aiProfile.model=ms.value||'gemini-2.0-flash';
-  aiProfile.name      = document.getElementById('ai-name-input').value.trim();
-  aiProfile.goals     = document.getElementById('ai-goals-input').value.trim();
-  aiProfile.context   = document.getElementById('ai-context-input').value.trim();
-  saveState();
-  closeM('m-ai-config');
-  renderAI();
-}
-
-document.getElementById('btn-ai-config').onclick = openAIConfig;
-
-
-// ============================================================
-// FLOATING AI ASSISTANT
-// ============================================================
-
-let floatOpen = false;
-let floatUnread = 0;
-
-// Context-aware chips per section
-const FLOAT_CHIPS = {
-  visao:  ['Analise meu resultado',       'Onde posso melhorar?',          'Estou saudável financeiramente?'],
-  orc:    ['Estou respeitando o orçamento?','Onde estourei mais?',          'Como ajustar meus limites?'],
-  desp:   ['Qual gasto devo cortar?',      'Minhas despesas estão altas?',  'Tendência das minhas despesas?'],
-  rec:    ['Minha renda está crescendo?',  'Como diversificar receita?',    'Análise da minha renda'],
-  metas:  ['Vou atingir minhas metas?',    'Qual meta priorizar?',          'Sugestão de nova meta'],
-  kpis:   ['Explique meus KPIs',           'Como melhorar meus indicadores?','Comparar com benchmarks'],
-  lanc:   ['Analise meus lançamentos',     'Tenho gastos recorrentes altos?','Padrões nos meus gastos'],
-  inv:    ['Avalie minha carteira',        'Estou diversificado?',          'Rentabilidade vs mercado'],
-  import: ['Como organizar meus dados?',   'Quais categorias usar?',        'Próximos passos'],
-  ai:     ['Como usar o assistente?',      'O que você pode analisar?',     'Dicas de perguntas'],
-};
-
-function getActiveSection(){
-  const active = document.querySelector('.sec.on');
-  return active ? active.id.replace('sec-','') : 'visao';
-}
-
-function toggleFloatAI(){
-  floatOpen = !floatOpen;
-  const panel = document.getElementById('ai-float-panel');
-  const fab   = document.getElementById('ai-fab');
-  panel.style.display = floatOpen ? 'flex' : 'none';
-  fab.style.transform  = floatOpen ? 'rotate(45deg) scale(0.9)' : 'scale(1)';
-  fab.style.boxShadow  = floatOpen ? '0 2px 10px rgba(52,211,153,.2)' : '0 4px 20px rgba(52,211,153,.4)';
-  if(floatOpen){
-    floatUnread = 0;
-    updateFloatBadge();
-    updateFloatContext();
-    renderFloatChips();
-    renderFloatMessages();
-    setTimeout(()=>{ document.getElementById('float-input').focus(); }, 100);
-  }
-}
-
-function updateFloatBadge(){
-  const badge = document.getElementById('ai-fab-badge');
-  if(floatUnread > 0){
-    badge.textContent = floatUnread;
-    badge.style.display = 'flex';
-  } else {
-    badge.style.display = 'none';
-  }
-}
-
-function updateFloatContext(){
-  const sec = getActiveSection();
-  const labels = {
-    visao:'Visão Geral ativa', orc:'Orçamento ativo', desp:'Despesas ativas',
-    rec:'Receitas ativas', metas:'Metas ativas', kpis:'KPIs ativos',
-    lanc:'Lançamentos ativos', inv:'Investimentos ativos',
-    import:'Importação ativa', ai:'Chat principal'
-  };
-  const el = document.getElementById('float-context-label');
-  if(el) el.textContent = (labels[sec]||'Todos os dados') + ' · ' + (RAW.length ? RAW[0].l+' – '+RAW[RAW.length-1].l : 'sem dados');
-
-  // Status line
-  const st = document.getElementById('float-status');
-  if(st) st.textContent = aiProfile.geminiKey ? (aiProfile.model||'gemini-2.0-flash')+' · conectado' : 'Chave não configurada';
-}
-
-function renderFloatChips(){
-  const sec   = getActiveSection();
-  const chips = FLOAT_CHIPS[sec] || FLOAT_CHIPS.visao;
-  const el    = document.getElementById('float-chips-row');
-  if(!el) return;
-  el.innerHTML = chips.map(s=>
-    `<button onclick="askFloatChip('${s.replace(/'/g,"\\'")}'))"
-      style="padding:4px 10px;border-radius:16px;border:1px solid rgba(255,255,255,.14);
-             background:#1a2335;color:#9aa5bf;font-size:11px;cursor:pointer;
-             white-space:nowrap;font-family:'Sora',sans-serif;flex-shrink:0;transition:all .15s"
-      onmouseover="this.style.borderColor='#34d399';this.style.color='#34d399'"
-      onmouseout="this.style.borderColor='rgba(255,255,255,.14)';this.style.color='#9aa5bf'"
-      >${s}</button>`
-  ).join('');
-}
-
-function askFloatChip(text){
-  document.getElementById('float-input').value = text;
-  sendFloatAI();
-}
-
-function renderFloatMessages(){
-  const box = document.getElementById('float-messages');
-  if(!box) return;
-  if(!aiHistory.length){
-    box.innerHTML = `<div style="display:flex;gap:7px;align-items:flex-start">
-      <div style="width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,#34d399,#059669);display:flex;align-items:center;justify-content:center;color:#052e16;font-size:10px;font-weight:700;flex-shrink:0;margin-top:2px">✦</div>
-      <div style="background:#1a2335;border-radius:10px;border-bottom-left-radius:3px;padding:.6rem .85rem;font-size:13px;color:#f0f4ff;line-height:1.6;max-width:90%">
-        Olá${aiProfile.name?' '+aiProfile.name:''}! Estou vendo seus dados em tempo real. Pergunte qualquer coisa sobre suas finanças.
-      </div></div>`;
-    return;
-  }
-  box.innerHTML = aiHistory.map(msg => {
-    if(msg.role==='user') return `
-      <div style="display:flex;justify-content:flex-end">
-        <div style="background:#34d399;color:#052e16;border-radius:10px;border-bottom-right-radius:3px;
-                    padding:.55rem .85rem;font-size:13px;font-weight:500;max-width:85%;line-height:1.5">
-          ${escapeHtml(msg.text)}
-        </div>
-      </div>`;
-    const bg = msg.error ? 'background:rgba(239,68,68,.12);color:#fca5a5;border:1px solid rgba(239,68,68,.2)' : 'background:#1a2335;color:#f0f4ff';
-    return `
-      <div style="display:flex;gap:7px;align-items:flex-start">
-        <div style="width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,#34d399,#059669);
-                    display:flex;align-items:center;justify-content:center;color:#052e16;
-                    font-size:10px;font-weight:700;flex-shrink:0;margin-top:2px">✦</div>
-        <div style="${bg};border-radius:10px;border-bottom-left-radius:3px;
-                    padding:.6rem .85rem;font-size:13px;line-height:1.6;max-width:88%">
-          ${escapeHtml(msg.text)}
-        </div>
-      </div>`;
-  }).join('');
-  box.scrollTop = box.scrollHeight;
-}
-
-function autoResizeFloat(el){
-  el.style.height = 'auto';
-  el.style.height = Math.min(el.scrollHeight, 100) + 'px';
-}
-
-async function sendFloatAI(){
-  const input = document.getElementById('float-input');
-  const text  = (input.value||'').trim();
-  if(!text) return;
-
-  if(!aiProfile.geminiKey){
-    openAIConfig();
-    return;
-  }
-
-  input.value = '';
-  input.style.height = 'auto';
-  const btn = document.getElementById('float-send-btn');
-  btn.disabled = true; btn.style.opacity = '0.5';
-
-  // Add user message to shared history
-  aiHistory.push({role:'user', text});
-  renderFloatMessages();
-
-  // Thinking dots
-  const box = document.getElementById('float-messages');
-  const thinking = document.createElement('div');
-  thinking.style.cssText = 'display:flex;align-items:center;gap:5px;padding:.25rem 0;';
-  thinking.innerHTML = `
-    <div style="width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,#34d399,#059669);
-                display:flex;align-items:center;justify-content:center;color:#052e16;font-size:10px;font-weight:700;flex-shrink:0">✦</div>
-    <span style="width:6px;height:6px;border-radius:50%;background:#6b7a99;animation:aiPulse 1.2s infinite;display:inline-block"></span>
-    <span style="width:6px;height:6px;border-radius:50%;background:#6b7a99;animation:aiPulse 1.2s .2s infinite;display:inline-block"></span>
-    <span style="width:6px;height:6px;border-radius:50%;background:#6b7a99;animation:aiPulse 1.2s .4s infinite;display:inline-block"></span>`;
-  box.appendChild(thinking);
-  box.scrollTop = box.scrollHeight;
-
-  try {
-    const recentHistory = aiHistory.slice(-12);
-    const contents = recentHistory.map(msg=>({
-      role: msg.role==='user' ? 'user' : 'model',
-      parts:[{text: msg.text}]
-    }));
-
-    // Add current section context as prefix to system prompt
-    const sec = getActiveSection();
-    const secNames = {visao:'Visão Geral',orc:'Orçamento',desp:'Despesas',rec:'Receitas',metas:'Metas',kpis:'KPIs',lanc:'Lançamentos',inv:'Investimentos'};
-    const secNote = `\nO usuário está atualmente na seção "${secNames[sec]||sec}" do dashboard.\n`;
-
-    const resp = await fetch(`${geminiURL()}?key=${aiProfile.geminiKey}`, {
-      method:'POST', headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({
-        system_instruction:{ parts:[{text: buildSystemPrompt() + secNote}] },
-        contents,
-        generationConfig:{ temperature:0.7, maxOutputTokens:800 }
-      })
-    });
-
-    thinking.remove();
-
-    if(!resp.ok){
-      const err = await resp.json().catch(()=>({}));
-      aiHistory.push({role:'bot', text:'Erro: '+(err?.error?.message||`HTTP ${resp.status}`), error:true});
-    } else {
-      const data = await resp.json();
-      const answer = data?.candidates?.[0]?.content?.parts?.[0]?.text || 'Sem resposta.';
-      aiHistory.push({role:'bot', text:answer});
-      // Badge if panel is closed
-      if(!floatOpen){ floatUnread++; updateFloatBadge(); }
-    }
-  } catch(e){
-    thinking.remove();
-    aiHistory.push({role:'bot', text:'Erro: '+e.message, error:true});
-  }
-
-  saveState();
-  renderFloatMessages();
-  // Also sync main AI tab if visible
-  if(document.getElementById('sec-ai').classList.contains('on')) renderAIMessages();
-  btn.disabled = false; btn.style.opacity = '1';
-}
-
-// Hook into renderSec to update float context (avoids call stack issue)
-const _origRenderSec = renderSec;
-function renderSec(id){
-  _origRenderSec(id);
-  if(floatOpen){ updateFloatContext(); renderFloatChips(); }
-}
-
-// ============================================================
 // CLOSE MODALS ON OVERLAY CLICK
 // ============================================================
 document.querySelectorAll('.moverlay').forEach(o=>o.addEventListener('click',function(e){if(e.target===this)this.classList.remove('open');}));
@@ -3311,8 +2762,6 @@ document.querySelectorAll('.moverlay').forEach(o=>o.addEventListener('click',fun
   invSeq      =saved.invSeq      ||1;
   cats        =saved.cats        ||DEFAULT_STATE.cats;
   catSeq      =saved.catSeq      ||DEFAULT_STATE.catSeq||13;
-  aiProfile   =saved.aiProfile   ||DEFAULT_STATE.aiProfile;
-  aiHistory   =saved.aiHistory   ||[];
   importedRaw =saved.importedRaw ||null;
   dataSource =saved.dataSource ||'sample';
   initRAWWithExtras();
@@ -3321,98 +2770,6 @@ document.querySelectorAll('.moverlay').forEach(o=>o.addEventListener('click',fun
   if(ind){ind.textContent='● IndexedDB conectado';ind.style.opacity='1';ind.style.color='var(--accent)';setTimeout(()=>{ind.style.opacity='0';},3000);}
 })();
 </script>
-
-<!-- ==================== FLOATING AI ASSISTANT ==================== -->
-
-<!-- Toggle button -->
-<button id="ai-fab" onclick="toggleFloatAI()" title="Assistente IA"
-  style="position:fixed;bottom:24px;right:24px;z-index:1000;
-         width:52px;height:52px;border-radius:50%;border:none;cursor:pointer;
-         background:linear-gradient(135deg,#34d399,#059669);
-         box-shadow:0 4px 20px rgba(52,211,153,.4);
-         font-size:20px;color:#052e16;font-weight:700;
-         display:flex;align-items:center;justify-content:center;
-         transition:transform .2s,box-shadow .2s">✦</button>
-
-<!-- Unread badge -->
-<span id="ai-fab-badge"
-  style="position:fixed;bottom:62px;right:20px;z-index:1001;
-         background:#ef4444;color:#fff;border-radius:50%;
-         width:18px;height:18px;font-size:10px;font-weight:700;
-         display:none;align-items:center;justify-content:center;
-         font-family:'DM Mono',monospace;pointer-events:none">0</span>
-
-<!-- Floating chat panel -->
-<div id="ai-float-panel"
-  style="position:fixed;bottom:88px;right:24px;z-index:999;
-         width:380px;max-width:calc(100vw - 32px);
-         background:#111827;border:1px solid rgba(255,255,255,.14);
-         border-radius:16px;display:none;flex-direction:column;
-         box-shadow:0 8px 40px rgba(0,0,0,.6);
-         overflow:hidden;max-height:calc(100vh - 120px)">
-
-  <!-- Header -->
-  <div style="display:flex;align-items:center;justify-content:space-between;
-              padding:.85rem 1.1rem;background:#1a2335;border-bottom:1px solid rgba(255,255,255,.07);flex-shrink:0">
-    <div style="display:flex;align-items:center;gap:9px">
-      <div style="width:28px;height:28px;border-radius:50%;
-                  background:linear-gradient(135deg,#34d399,#059669);
-                  display:flex;align-items:center;justify-content:center;
-                  color:#052e16;font-size:13px;font-weight:700">✦</div>
-      <div>
-        <div style="font-size:13px;font-weight:600;color:#f0f4ff">Assistente Odysseus</div>
-        <div style="font-size:11px;color:#6b7a99" id="float-status">Gemini 1.5 Flash</div>
-      </div>
-    </div>
-    <div style="display:flex;gap:4px;align-items:center">
-      <button onclick="clearAIHistory();renderFloatMessages()" title="Limpar conversa"
-        style="background:none;border:none;cursor:pointer;color:#6b7a99;font-size:14px;padding:4px 6px;border-radius:6px;transition:color .2s"
-        onmouseover="this.style.color='#f0f4ff'" onmouseout="this.style.color='#6b7a99'">↺</button>
-      <button onclick="openAIConfig()" title="Configurar"
-        style="background:none;border:none;cursor:pointer;color:#6b7a99;font-size:14px;padding:4px 6px;border-radius:6px;transition:color .2s"
-        onmouseover="this.style.color='#f0f4ff'" onmouseout="this.style.color='#6b7a99'">⚙</button>
-      <button onclick="toggleFloatAI()" title="Fechar"
-        style="background:none;border:none;cursor:pointer;color:#6b7a99;font-size:18px;padding:4px 6px;line-height:1;border-radius:6px;transition:color .2s"
-        onmouseover="this.style.color='#f0f4ff'" onmouseout="this.style.color='#6b7a99'">×</button>
-    </div>
-  </div>
-
-  <!-- Context badge (shows which section data is from) -->
-  <div id="float-context-bar"
-    style="padding:.4rem 1.1rem;background:#0a0f1a;border-bottom:1px solid rgba(255,255,255,.05);
-           font-size:11px;color:#6b7a99;display:flex;align-items:center;gap:6px;flex-shrink:0">
-    <span style="color:#34d399">●</span>
-    <span id="float-context-label">Todos os dados carregados</span>
-  </div>
-
-  <!-- Suggestion chips -->
-  <div id="float-chips-row"
-    style="display:flex;gap:5px;padding:.6rem 1rem;overflow-x:auto;flex-shrink:0;
-           border-bottom:1px solid rgba(255,255,255,.05)">
-  </div>
-
-  <!-- Messages -->
-  <div id="float-messages"
-    style="flex:1;overflow-y:auto;padding:.9rem 1rem;display:flex;flex-direction:column;gap:.6rem;min-height:200px">
-  </div>
-
-  <!-- Input -->
-  <div style="padding:.65rem .85rem;border-top:1px solid rgba(255,255,255,.07);
-              display:flex;gap:7px;align-items:flex-end;flex-shrink:0;background:#111827">
-    <textarea id="float-input" rows="1" placeholder="Pergunte sobre suas finanças..."
-      style="flex:1;background:#1a2335;border:1px solid rgba(255,255,255,.14);
-             border-radius:9px;padding:8px 11px;color:#f0f4ff;
-             font-family:'Sora',sans-serif;font-size:13px;resize:none;outline:none;
-             line-height:1.5;max-height:100px;overflow-y:auto;min-height:36px"
-      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendFloatAI();}"
-      oninput="autoResizeFloat(this)"></textarea>
-    <button onclick="sendFloatAI()" id="float-send-btn"
-      style="padding:7px 14px;border-radius:9px;border:none;
-             background:#34d399;color:#052e16;font-family:'Sora',sans-serif;
-             font-size:12px;font-weight:600;cursor:pointer;height:36px;
-             flex-shrink:0;transition:opacity .2s;white-space:nowrap">Enviar</button>
-  </div>
-</div>
 
 </body>
 </html>
