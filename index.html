@@ -648,16 +648,26 @@ jan    | 2026 | 2026-01-10 | padaria         | alimentação        | cafeterias
 
 <!-- ===== LANÇAMENTOS ===== -->
 <div id="sec-lanc" class="sec">
-  <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:.25rem">
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:1rem">
     <div><p class="stitle">Lançamentos</p><p class="ssub" style="margin:0">Registre receitas e despesas manualmente</p></div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="cfg-btn" id="btn-cat-mgr">⚙ Categorias</button>
       <button class="cfg-btn accent" onclick="openM('m-lanc-add')">+ Novo lançamento</button>
     </div>
   </div>
+  <!-- Sub-tabs -->
+  <div style="display:flex;gap:4px;background:var(--bg3);border-radius:10px;padding:4px;border:1px solid var(--border);margin-bottom:1.25rem;width:fit-content">
+    <button class="pfbtn on" id="lanc-tab-manual" onclick="setLancTab('manual',this)">Lançamentos</button>
+    <button class="pfbtn" id="lanc-tab-concil" onclick="setLancTab('concil',this)">
+      Conciliação bancária
+      <span id="concil-badge" style="display:none;background:#f59e0b;color:#1c1507;border-radius:10px;font-size:10px;font-weight:700;padding:1px 6px;margin-left:5px">0</span>
+    </button>
+  </div>
 
+  <!-- MANUAL TAB -->
+  <div id="lanc-panel-manual">
   <!-- Summary strip -->
-  <div class="g3" id="lanc-summary" style="margin-top:1rem"></div>
+  <div class="g3" id="lanc-summary" style="margin-top:0"></div>
 
   <!-- Filter bar -->
   <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:1rem">
@@ -693,6 +703,42 @@ jan    | 2026 | 2026-01-10 | padaria         | alimentação        | cafeterias
       Nenhum lançamento ainda. Clique em "+ Novo lançamento" para começar.
     </div>
   </div>
+  </div><!-- /lanc-panel-manual -->
+
+  <!-- CONCILIATION TAB -->
+  <div id="lanc-panel-concil" style="display:none">
+    <div class="ins info" style="margin-bottom:1rem">
+      <span class="ico">ℹ</span>
+      <span class="msg"><strong>Como funciona:</strong> importe um extrato OFX na aba "Importar dados", depois volte aqui para vincular cada lançamento do banco ao seu registro manual. Verde = conciliado · Amarelo = pendente · Vermelho = divergente.</span>
+    </div>
+
+    <!-- Stats strip -->
+    <div class="g4" id="concil-stats" style="margin-bottom:1rem"></div>
+
+    <!-- Filter -->
+    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:1rem">
+      <select id="concil-filter" onchange="renderConcil()" style="padding:5px 10px;border-radius:8px;background:var(--bg3);border:1px solid var(--border2);color:var(--text);font-size:13px;outline:none">
+        <option value="all">Todos</option>
+        <option value="pendente">Pendentes</option>
+        <option value="conciliado">Conciliados</option>
+        <option value="divergente">Divergentes</option>
+      </select>
+      <button class="btn btn-g btn-sm" onclick="autoConcil()">✨ Auto-conciliar</button>
+      <span id="concil-count" style="font-size:12px;color:var(--muted);margin-left:auto"></span>
+    </div>
+
+    <!-- Conciliation table -->
+    <div class="card" style="padding:0;overflow:hidden">
+      <div style="display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--border)">
+        <div style="padding:.75rem 1.5rem;font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);border-right:1px solid var(--border)">Extrato bancário (OFX)</div>
+        <div style="padding:.75rem 1.5rem;font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted)">Lançamento manual</div>
+      </div>
+      <div id="concil-rows"></div>
+      <div id="concil-empty" style="padding:2rem;text-align:center;color:var(--muted);font-size:13px;display:none">
+        Nenhum extrato OFX importado. Vá em <strong>⊕ Importar dados → OFX</strong> para carregar seu extrato bancário.
+      </div>
+    </div>
+  </div><!-- /lanc-panel-concil -->
 </div>
 
 
@@ -772,7 +818,7 @@ jan    | 2026 | 2026-01-10 | padaria         | alimentação        | cafeterias
       <div class="frow">
         <div class="field">
           <label>Data</label>
-          <input type="date" id="lanc-data">
+          <input type="date" id="lanc-data" onchange="updateRepPreview()">
         </div>
         <div class="field">
           <label>Tipo</label>
@@ -807,10 +853,22 @@ jan    | 2026 | 2026-01-10 | padaria         | alimentação        | cafeterias
       <!-- Recurrence -->
       <div class="field">
         <label>Repetir</label>
-        <select id="lanc-rep">
+        <select id="lanc-rep" onchange="toggleRepMeses()">
           <option value="none">Sem repetição</option>
-          <option value="monthly">Todo mês (recorrente)</option>
+          <option value="monthly">Todo mês</option>
         </select>
+      </div>
+      <div id="rep-meses-field" style="display:none">
+        <div class="frow">
+          <div class="field" style="margin:0">
+            <label>Por quantos meses</label>
+            <input type="number" id="lanc-rep-meses" min="1" max="120" step="1" value="12" placeholder="Ex: 12" oninput="updateRepPreview()">
+          </div>
+          <div class="field" style="margin:0">
+            <label>Prévia</label>
+            <div id="rep-preview" style="padding:9px 12px;background:var(--bg3);border:1px solid var(--border);border-radius:9px;font-size:12px;color:var(--muted2)">12 lançamentos</div>
+          </div>
+        </div>
       </div>
     </div>
     <div class="mfoot">
@@ -1068,6 +1126,31 @@ jan    | 2026 | 2026-01-10 | padaria         | alimentação        | cafeterias
 </div></div>
 </div>
 
+<!-- MODAL: Vincular lançamento à entrada OFX -->
+<div class="moverlay" id="m-link-modal">
+  <div class="mdialog" style="max-width:500px">
+    <div class="mhdr">
+      <h3>Vincular lançamento</h3>
+      <button class="mclose" onclick="closeM('m-link-modal')">×</button>
+    </div>
+    <div class="mbody">
+      <div class="ins info" style="margin-bottom:1rem">
+        <span class="ico">🏦</span>
+        <span class="msg">OFX: <strong id="link-ofx-desc"></strong></span>
+      </div>
+      <div class="field" style="margin-bottom:.75rem">
+        <label>Buscar lançamento</label>
+        <input type="text" id="link-search" placeholder="Descrição ou categoria..."
+          oninput="renderLinkResults(this.value)">
+      </div>
+      <div id="link-results" style="max-height:320px;overflow-y:auto;border:1px solid var(--border);border-radius:10px"></div>
+    </div>
+    <div class="mfoot">
+      <button class="btn btn-g" onclick="closeM('m-link-modal')">Cancelar</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== MODAIS ===== -->
 
 <!-- Orçamentos -->
@@ -1178,14 +1261,15 @@ const DEFAULT_STATE={
     {id:10,nome:'Outros',           cor:'#6b7a99', tipo:'ambos'},
     {id:11,nome:'Renda',            cor:'#22c55e', tipo:'rec'},
     {id:12,nome:'Transferências',   cor:'#94a3b8', tipo:'ambos'},
-  ], catSeq:13
+  ], catSeq:13,
+  ofxEntries:[],ofxSeq:1
 };
 function openDB(){return new Promise((res,rej)=>{if(_db){res(_db);return;}const r=indexedDB.open(DB_NAME,DB_VERSION);r.onupgradeneeded=e=>{if(!e.target.result.objectStoreNames.contains(STORE))e.target.result.createObjectStore(STORE);};r.onsuccess=e=>{_db=e.target.result;res(_db);};r.onerror=e=>rej(e.target.error);});}
 async function loadState(){try{const db=await openDB();const r=await new Promise((ok,err)=>{const q=db.transaction(STORE,'readonly').objectStore(STORE).get(STATE_KEY);q.onsuccess=()=>ok(q.result);q.onerror=()=>err(q.error);});return r||JSON.parse(JSON.stringify(DEFAULT_STATE));}catch(e){return JSON.parse(JSON.stringify(DEFAULT_STATE));}}
-async function saveState(){try{const db=await openDB();await new Promise((ok,err)=>{const r=db.transaction(STORE,'readwrite').objectStore(STORE).put({budgets,metas,metaSeq,trxExtra,trxSeq,investimentos,invSeq,cats,catSeq,importedRaw,dataSource},STATE_KEY);r.onsuccess=ok;r.onerror=()=>err(r.error);});showSaved();}catch(e){console.warn('IDB save error',e);}}
+async function saveState(){try{const db=await openDB();await new Promise((ok,err)=>{const r=db.transaction(STORE,'readwrite').objectStore(STORE).put({budgets,metas,metaSeq,trxExtra,trxSeq,investimentos,invSeq,cats,catSeq,ofxEntries,ofxSeq,importedRaw,dataSource},STATE_KEY);r.onsuccess=ok;r.onerror=()=>err(r.error);});showSaved();}catch(e){console.warn('IDB save error',e);}}
 function showSaved(){const el=document.getElementById('save-ind');if(!el)return;el.textContent='✓ Salvo';el.style.opacity='1';clearTimeout(el._t);el._t=setTimeout(()=>{el.style.opacity='0';},2500);}
 function exportJSON(){const b=new Blob([JSON.stringify({budgets,metas,trxExtra,investimentos,importedRaw,dataSource,at:new Date().toISOString()},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='odysseus_backup_'+new Date().toISOString().slice(0,10)+'.json';a.click();}
-function importJSON(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=async ev=>{try{const d=JSON.parse(ev.target.result);if(d.budgets)budgets=d.budgets;if(d.metas){metas=d.metas;metaSeq=Math.max(...metas.map(m=>m.id),0)+1;}if(d.trxExtra)trxExtra=d.trxExtra;if(d.investimentos){investimentos=d.investimentos;invSeq=Math.max(...investimentos.map(x=>x.id),0)+1;}if(d.cats){cats=d.cats;catSeq=Math.max(...cats.map(x=>x.id),0)+1;}if(d.importedRaw){importedRaw=d.importedRaw;dataSource=d.dataSource||'xlsx';}await saveState();initRAWWithExtras();renderSec(document.querySelector('.sec.on').id.replace('sec-',''));alert('Backup importado com sucesso!');}catch(err){alert('Erro: arquivo inválido.');}};r.readAsText(f);e.target.value='';}
+function importJSON(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=async ev=>{try{const d=JSON.parse(ev.target.result);if(d.budgets)budgets=d.budgets;if(d.metas){metas=d.metas;metaSeq=Math.max(...metas.map(m=>m.id),0)+1;}if(d.trxExtra)trxExtra=d.trxExtra;if(d.investimentos){investimentos=d.investimentos;invSeq=Math.max(...investimentos.map(x=>x.id),0)+1;}if(d.cats){cats=d.cats;catSeq=Math.max(...cats.map(x=>x.id),0)+1;}if(d.ofxEntries){ofxEntries=d.ofxEntries;ofxSeq=Math.max(...ofxEntries.map(x=>x.id),0)+1;}if(d.importedRaw){importedRaw=d.importedRaw;dataSource=d.dataSource||'xlsx';}await saveState();initRAWWithExtras();renderSec(document.querySelector('.sec.on').id.replace('sec-',''));alert('Backup importado com sucesso!');}catch(err){alert('Erro: arquivo inválido.');}};r.readAsText(f);e.target.value='';}
 function resetState(){openM('m-reset');}
 async function confirmReset(){closeM('m-reset');try{const db=await openDB();const tx=db.transaction(STORE,'readwrite');tx.objectStore(STORE).delete(STATE_KEY);await new Promise(ok=>{tx.oncomplete=ok;});}catch(e){}location.reload();}
 
@@ -1198,6 +1282,7 @@ let budgets=_s_init.budgets,metas=_s_init.metas,metaSeq=_s_init.metaSeq;
 let trxExtra=_s_init.trxExtra,trxSeq=_s_init.trxSeq;
 let investimentos=[],invSeq=1;
 let cats=_s_init.cats,catSeq=_s_init.catSeq||13;
+let ofxEntries=_s_init.ofxEntries||[],ofxSeq=_s_init.ofxSeq||1;
 let importedRaw=null,dataSource='sample';
 const charts={};
 let RAW=[],MESES=[],LABELS=[];
@@ -1998,15 +2083,26 @@ function confirmOFXImport(){
   const valid=_pendingOFX.filter(t=>!t.skip&&t.cat);
   const unclass=_pendingOFX.filter(t=>!t.skip&&!t.cat);
   if(unclass.length>0){if(!confirm(`${unclass.length} transação(ões) sem categoria serão importadas como "Outros". Continuar?`))return;}
-  valid.forEach(t=>{if(!t.cat)t.cat='Outros';});
   const all=_pendingOFX.filter(t=>!t.skip);
-  // Merge into existing RAW or create new months
+  all.forEach(t=>{if(!t.cat)t.cat='Outros';});
+  // Save to persistent ofxEntries store for conciliation
+  all.forEach(t=>{
+    // avoid duplicates by memo+date+val key
+    const key=t.date+'|'+t.memo+'|'+t.val;
+    if(!ofxEntries.find(e=>e.key===key)){
+      ofxEntries.push({
+        id:ofxSeq++, key, date:t.date, memo:t.memo,
+        val:t.val, cat:t.cat, conciliadoId:null
+      });
+    }
+  });
+  // Merge into RAW
   const newRaw=mergeOFXIntoRAW(all);
   importedRaw=newRaw;dataSource='ofx';
   saveState();initRAWWithExtras();
   document.getElementById('ofx-classify').style.display='none';
-  alert('✓ '+all.length+' transações OFX importadas com sucesso!');
-  showSec('visao',document.querySelector('.nb'));renderVisao();
+  alert('✓ '+all.length+' transações OFX salvas. Acesse a aba Lançamentos → Conciliação para vincular.');
+  showSec('lanc',document.querySelector('.nb[onclick*=lanc]'));renderLanc();
 }
 function mergeOFXIntoRAW(trxList){
   const monthMap={};
@@ -2174,6 +2270,8 @@ function openNewLanc(){
   document.getElementById('lanc-obs').value  = '';
   document.getElementById('lanc-valor').value = '';
   document.getElementById('lanc-rep').value = 'none';
+  document.getElementById('lanc-rep-meses').value='12';
+  toggleRepMeses();
   updateLancTipoUI();
   openM('m-lanc-add');
 }
@@ -2220,8 +2318,8 @@ function saveLanc(){
     const newEntry = {id:trxSeq++, data, tipo, desc, cat, valor, obs, rep, mKey, mLabel, active:true, createdAt:new Date().toISOString()};
     trxExtra.push(newEntry);
     if(rep==='monthly'){
-      // Add 11 more months
-      for(let i=1;i<=11;i++){
+      const meses = Math.max(1, parseInt(document.getElementById('lanc-rep-meses').value)||12);
+      for(let i=1;i<meses;i++){
         const d = new Date(data); d.setMonth(d.getMonth()+i);
         const nd = d.toISOString().slice(0,10);
         const nk = dateToMKey(nd);
@@ -2300,6 +2398,7 @@ function renderLanc(){
     <div class="kpi ${totRes>=0?'b':'r'}"><div class="kl">Saldo</div><div class="kv ${totRes>=0?'gc':'rc'}" style="font-size:1.2rem">${totRes>=0?'+':''}${brl(totRes)}</div></div>`;
 
   document.getElementById('lanc-count').textContent = list.length + ' lançamento(s)';
+  updateConcilBadge();
 
   const tbody = document.getElementById('lanc-tbody');
   const empty = document.getElementById('lanc-empty');
@@ -2758,6 +2857,288 @@ function saveMetaUpdate(){
   renderMetas();
 }
 
+
+// ============================================================
+// CONCILIAÇÃO BANCÁRIA
+// ============================================================
+
+let _lancTab = 'manual';
+let _pendingConcilLink = null; // ofxEntry id being linked
+
+function setLancTab(tab, btn){
+  _lancTab = tab;
+  document.querySelectorAll('#lanc-tab-manual,#lanc-tab-concil').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  document.getElementById('lanc-panel-manual').style.display = tab==='manual' ? 'block' : 'none';
+  document.getElementById('lanc-panel-concil').style.display = tab==='concil' ? 'block' : 'none';
+  if(tab==='concil') renderConcil();
+}
+
+function updateConcilBadge(){
+  const pending = ofxEntries.filter(e=>!e.conciliadoId).length;
+  const badge = document.getElementById('concil-badge');
+  if(!badge) return;
+  if(pending > 0){ badge.textContent=pending; badge.style.display='inline'; }
+  else { badge.style.display='none'; }
+}
+
+// Status of an OFX entry
+function concilStatus(ofxEntry){
+  if(!ofxEntry.conciliadoId) return 'pendente';
+  const lanc = trxExtra.find(t=>t.id===ofxEntry.conciliadoId);
+  if(!lanc) return 'pendente';
+  const diff = Math.abs(Math.abs(ofxEntry.val) - lanc.valor);
+  return diff < 0.05 ? 'conciliado' : 'divergente';
+}
+
+function concilStatusLabel(st){
+  return {conciliado:'✓ Conciliado', pendente:'⚠ Pendente', divergente:'✕ Divergente'}[st]||st;
+}
+function concilStatusColor(st){
+  return {conciliado:'#22c55e', pendente:'#f59e0b', divergente:'#ef4444'}[st]||'#6b7a99';
+}
+
+function renderConcil(){
+  const filter = document.getElementById('concil-filter')?.value || 'all';
+
+  if(!ofxEntries.length){
+    document.getElementById('concil-empty').style.display='block';
+    document.getElementById('concil-rows').innerHTML='';
+    document.getElementById('concil-stats').innerHTML='';
+    return;
+  }
+  document.getElementById('concil-empty').style.display='none';
+
+  // Stats
+  const total = ofxEntries.length;
+  const conciliados = ofxEntries.filter(e=>concilStatus(e)==='conciliado').length;
+  const pendentes   = ofxEntries.filter(e=>concilStatus(e)==='pendente').length;
+  const divergentes = ofxEntries.filter(e=>concilStatus(e)==='divergente').length;
+  document.getElementById('concil-stats').innerHTML = `
+    <div class="kpi n"><div class="kl">Total OFX</div><div class="kv wc" style="font-size:1.2rem">${total}</div></div>
+    <div class="kpi g"><div class="kl">Conciliados</div><div class="kv gc" style="font-size:1.2rem">${conciliados}</div></div>
+    <div class="kpi y"><div class="kl">Pendentes</div><div class="kv yc" style="font-size:1.2rem">${pendentes}</div></div>
+    <div class="kpi ${divergentes>0?'r':'n'}"><div class="kl">Divergentes</div><div class="kv ${divergentes>0?'rc':'wc'}" style="font-size:1.2rem">${divergentes}</div></div>`;
+
+  // Filter entries
+  let entries = [...ofxEntries].sort((a,b)=>b.date.localeCompare(a.date));
+  if(filter !== 'all') entries = entries.filter(e=>concilStatus(e)===filter);
+
+  document.getElementById('concil-count').textContent = entries.length+' entradas';
+  updateConcilBadge();
+
+  if(!entries.length){
+    document.getElementById('concil-rows').innerHTML =
+      `<div style="padding:1.5rem;text-align:center;color:var(--muted);font-size:13px">Nenhuma entrada com esse filtro.</div>`;
+    return;
+  }
+
+  document.getElementById('concil-rows').innerHTML = entries.map(ofx=>{
+    const st = concilStatus(ofx);
+    const stColor = concilStatusColor(st);
+    const lanc = ofx.conciliadoId ? trxExtra.find(t=>t.id===ofx.conciliadoId) : null;
+    const isNeg = ofx.val < 0;
+
+    // OFX side
+    const ofxSide = `
+      <div style="padding:.85rem 1.25rem;border-right:1px solid var(--border)">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:4px">
+          <span style="font-size:13px;font-weight:500;color:var(--text)">${ofx.memo}</span>
+          <span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:600;color:${isNeg?'#ef4444':'#22c55e'};white-space:nowrap">${isNeg?'-':'+'}${brl(ofx.val)}</span>
+        </div>
+        <div style="font-size:11px;color:var(--muted)">${ofx.date} · <span class="badge bl">${ofx.cat}</span></div>
+      </div>`;
+
+    // Lançamento side
+    let lancSide;
+    if(lanc){
+      const diff = Math.abs(Math.abs(ofx.val) - lanc.valor);
+      lancSide = `
+        <div style="padding:.85rem 1.25rem">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:4px">
+            <span style="font-size:13px;font-weight:500;color:var(--text)">${lanc.desc}</span>
+            <span style="font-family:'DM Mono',monospace;font-size:13px;font-weight:600;color:${lanc.tipo==='desp'?'#ef4444':'#22c55e'};white-space:nowrap">${lanc.tipo==='desp'?'-':'+'}${brl(lanc.valor)}</span>
+          </div>
+          <div style="font-size:11px;color:var(--muted)">${lanc.data} · <span class="badge bl">${lanc.cat}</span></div>
+          ${diff>=0.05?`<div style="font-size:11px;color:#f59e0b;margin-top:3px">⚠ Diferença de ${brl(diff)}</div>`:''}
+          <div style="margin-top:6px;display:flex;gap:6px">
+            <button class="btn btn-g btn-sm" onclick="unlinkConcil(${ofx.id})" style="font-size:11px">Desvincular</button>
+          </div>
+        </div>`;
+    } else {
+      // Show matching suggestions + link button
+      const suggestions = findMatchingSuggestions(ofx);
+      lancSide = `
+        <div style="padding:.85rem 1.25rem">
+          <div style="font-size:12px;color:var(--muted);margin-bottom:.5rem">Vincular a lançamento manual:</div>
+          ${suggestions.length
+            ? suggestions.map(s=>`
+                <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 8px;border-radius:8px;background:var(--bg3);border:1px solid var(--border);margin-bottom:4px;gap:8px;cursor:pointer" onclick="linkConcil(${ofx.id},${s.id})">
+                  <div style="min-width:0">
+                    <div style="font-size:12px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${s.desc}</div>
+                    <div style="font-size:11px;color:var(--muted)">${s.data} · ${brl(s.valor)}</div>
+                  </div>
+                  <span style="font-size:11px;color:var(--accent);white-space:nowrap;flex-shrink:0">Vincular →</span>
+                </div>`).join('')
+            : '<div style="font-size:12px;color:var(--muted);margin-bottom:.5rem">Nenhuma sugestão.</div>'
+          }
+          <button class="btn btn-g btn-sm" onclick="openLinkModal(${ofx.id})" style="font-size:11px;margin-top:4px">Buscar lançamento…</button>
+          <button class="btn btn-p btn-sm" onclick="createFromOFX(${ofx.id})" style="font-size:11px;margin-top:4px">+ Criar lançamento</button>
+        </div>`;
+    }
+
+    const borderColor = {conciliado:'rgba(34,197,94,.3)', pendente:'rgba(245,158,11,.2)', divergente:'rgba(239,68,68,.3)'}[st];
+    return `
+      <div style="display:grid;grid-template-columns:1fr 1fr;border-bottom:1px solid var(--border);border-left:3px solid ${stColor}">
+        ${ofxSide}
+        ${lancSide}
+      </div>`;
+  }).join('');
+}
+
+// Find candidate lançamentos for an OFX entry (same approx value + close date)
+function findMatchingSuggestions(ofx){
+  const ofxAmt = Math.abs(ofx.val);
+  const ofxDate = ofx.date; // "DD/MM/YYYY"
+  return trxExtra
+    .filter(t => !ofxEntries.find(e=>e.conciliadoId===t.id)) // not already linked
+    .filter(t => {
+      const diff = Math.abs(t.valor - ofxAmt);
+      return diff / Math.max(ofxAmt,1) < 0.05; // within 5%
+    })
+    .sort((a,b)=>{
+      // Sort by date proximity
+      const da = Math.abs(new Date(a.data) - new Date(ofxDate.split('/').reverse().join('-')));
+      const db = Math.abs(new Date(b.data) - new Date(ofxDate.split('/').reverse().join('-')));
+      return da - db;
+    })
+    .slice(0, 3);
+}
+
+function linkConcil(ofxId, lancId){
+  const entry = ofxEntries.find(e=>e.id===ofxId);
+  if(entry){ entry.conciliadoId=lancId; saveState(); renderConcil(); }
+}
+
+function unlinkConcil(ofxId){
+  const entry = ofxEntries.find(e=>e.id===ofxId);
+  if(entry){ entry.conciliadoId=null; saveState(); renderConcil(); }
+}
+
+// Auto-conciliation: match by value proximity + date proximity
+function autoConcil(){
+  let count = 0;
+  ofxEntries.filter(e=>!e.conciliadoId).forEach(ofx=>{
+    const suggestions = findMatchingSuggestions(ofx);
+    if(suggestions.length===1){ // only auto-link if exactly one match
+      ofx.conciliadoId = suggestions[0].id;
+      count++;
+    }
+  });
+  saveState();
+  renderConcil();
+  if(count>0) alert(`✓ ${count} lançamento(s) conciliados automaticamente.`);
+  else alert('Nenhuma correspondência unívoca encontrada. Vincule manualmente.');
+}
+
+// Create a new lançamento from OFX entry
+function createFromOFX(ofxId){
+  const ofx = ofxEntries.find(e=>e.id===ofxId);
+  if(!ofx) return;
+  // Pre-fill the add modal
+  const parts = ofx.date.split('/');
+  const isoDate = parts.length===3 ? `${parts[2]}-${parts[1]}-${parts[0]}` : todayISO();
+  document.getElementById('lanc-edit-id').value = '';
+  document.getElementById('m-lanc-title').textContent = 'Novo lançamento (do OFX)';
+  document.getElementById('lanc-data').value = isoDate;
+  document.getElementById('lanc-tipo').value = ofx.val < 0 ? 'desp' : 'rec';
+  document.getElementById('lanc-desc').value = ofx.memo;
+  document.getElementById('lanc-obs').value  = 'Importado do OFX';
+  document.getElementById('lanc-valor').value = Math.abs(ofx.val);
+  document.getElementById('lanc-rep').value  = 'none';
+  updateLancTipoUI();
+  document.getElementById('lanc-cat').value = ofx.cat||'Outros';
+  // Store OFX id to auto-link after save
+  document.getElementById('lanc-edit-id').dataset.ofxId = ofxId;
+  setLancTab('manual', document.getElementById('lanc-tab-manual'));
+  openM('m-lanc-add');
+}
+
+// Open a search modal to manually pick a lançamento to link
+function openLinkModal(ofxId){
+  _pendingConcilLink = ofxId;
+  const ofx = ofxEntries.find(e=>e.id===ofxId);
+  document.getElementById('link-ofx-desc').textContent = ofx ? `"${ofx.memo}" · ${brl(ofx.val)} · ${ofx.date}` : '';
+  document.getElementById('link-search').value='';
+  renderLinkResults('');
+  openM('m-link-modal');
+}
+
+function renderLinkResults(q){
+  const q2 = q.toLowerCase();
+  const list = trxExtra
+    .filter(t=>!ofxEntries.find(e=>e.id!==_pendingConcilLink&&e.conciliadoId===t.id))
+    .filter(t=>!q2||t.desc.toLowerCase().includes(q2)||t.cat.toLowerCase().includes(q2))
+    .slice(0,20);
+  document.getElementById('link-results').innerHTML = list.length
+    ? list.map(t=>`
+        <div class="trow" onclick="linkConcil(${_pendingConcilLink},${t.id});closeM('m-link-modal');renderConcil()"
+          style="display:flex;align-items:center;justify-content:space-between;padding:9px 10px;border-bottom:1px solid var(--border);cursor:pointer">
+          <div>
+            <div style="font-size:13px;font-weight:500;color:var(--text)">${t.desc}</div>
+            <div style="font-size:11px;color:var(--muted)">${t.data} · ${t.cat}</div>
+          </div>
+          <div style="font-family:'DM Mono',monospace;font-size:13px;color:${t.tipo==='desp'?'#ef4444':'#22c55e'};font-weight:600;white-space:nowrap">
+            ${t.tipo==='desp'?'-':'+'}${brl(t.valor)}
+          </div>
+        </div>`).join('')
+    : '<p style="color:var(--muted);font-size:13px;padding:1rem">Nenhum lançamento encontrado.</p>';
+}
+
+// Hook into saveLanc to auto-link if creating from OFX
+const _origSaveLanc = saveLanc;
+function saveLanc(){
+  const ofxId = parseInt(document.getElementById('lanc-edit-id').dataset.ofxId||'');
+  _origSaveLanc();
+  if(ofxId){
+    // Find the newly created lançamento (last one added)
+    const newLanc = trxExtra[trxExtra.length-1];
+    if(newLanc){
+      const entry = ofxEntries.find(e=>e.id===ofxId);
+      if(entry){ entry.conciliadoId=newLanc.id; saveState(); }
+    }
+    document.getElementById('lanc-edit-id').dataset.ofxId='';
+    // Switch back to concil tab
+    setTimeout(()=>{
+      setLancTab('concil', document.getElementById('lanc-tab-concil'));
+    }, 100);
+  }
+}
+
+
+function toggleRepMeses(){
+  const rep = document.getElementById('lanc-rep').value;
+  const field = document.getElementById('rep-meses-field');
+  field.style.display = rep==='monthly' ? 'block' : 'none';
+  if(rep==='monthly') updateRepPreview();
+}
+function updateRepPreview(){
+  const n = parseInt(document.getElementById('lanc-rep-meses').value)||12;
+  const data = document.getElementById('lanc-data').value;
+  const el = document.getElementById('rep-preview');
+  if(!el) return;
+  if(data && n>0){
+    const last = new Date(data);
+    last.setMonth(last.getMonth() + n - 1);
+    const mNames=['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+    const lastLabel = mNames[last.getMonth()]+'/'+String(last.getFullYear()).slice(2);
+    el.textContent = n+' lançamento'+(n>1?'s':'')+' · até '+lastLabel;
+    el.style.color = 'var(--accent)';
+  } else {
+    el.textContent = (n||0)+' lançamento'+(n!==1?'s':'');
+    el.style.color = 'var(--muted2)';
+  }
+}
 // ============================================================
 // CLOSE MODALS ON OVERLAY CLICK
 // ============================================================
@@ -2777,6 +3158,8 @@ document.querySelectorAll('.moverlay').forEach(o=>o.addEventListener('click',fun
   invSeq      =saved.invSeq      ||1;
   cats        =saved.cats        ||DEFAULT_STATE.cats;
   catSeq      =saved.catSeq      ||DEFAULT_STATE.catSeq||13;
+  ofxEntries  =saved.ofxEntries  ||[];
+  ofxSeq      =saved.ofxSeq      ||1;
   importedRaw =saved.importedRaw ||null;
   dataSource =saved.dataSource ||'sample';
   initRAWWithExtras();
