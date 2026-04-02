@@ -322,6 +322,8 @@ td.nm{color:var(--text)}
   <button class="nb" onclick="showSec('kpis',this)">KPIs</button>
   <button class="nb" onclick="showSec('lanc',this)">✎ Lançamentos</button>
   <button class="nb" onclick="showSec('inv',this)">◈ Investimentos</button>
+  <button class="nb" onclick="showSec('dre',this)">▦ DRE</button>
+  <button class="nb" onclick="showSec('fluxo',this)">⇄ Fluxo de Caixa</button>
   <button class="nb" id="nb-import" onclick="showSec('import',this)">⊕ Importar dados</button>
 </nav>
 
@@ -787,6 +789,80 @@ jan    | 2026 | 2026-01-10 | padaria         | alimentação        | cafeterias
 
 
   
+
+<!-- ===== DRE ===== -->
+<div id="sec-dre" class="sec">
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:.25rem">
+    <div>
+      <p class="stitle">DRE <span style="font-size:14px;font-weight:400;color:var(--muted);font-family:'Sora',sans-serif">· Demonstração do Resultado</span></p>
+      <p class="ssub" style="margin:0" id="dre-period-label">Período atual</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="cfg-btn" onclick="toggleDREAll(true)">Expandir</button>
+      <button class="cfg-btn" onclick="toggleDREAll(false)">Recolher</button>
+      <button class="cfg-btn accent" onclick="exportDRECSV()">⬇ CSV</button>
+      <button class="cfg-btn" onclick="openDREConfig()">⚙ Configurar DRE</button>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1rem">
+    <div class="kpi g"><div class="kl">Receita Total</div><div class="kv gc" id="dre-k-rec">—</div></div>
+    <div class="kpi r"><div class="kl">Despesas Totais</div><div class="kv rc" id="dre-k-desp">—</div></div>
+    <div class="kpi b"><div class="kl">Resultado</div><div class="kv" id="dre-k-res">—</div></div>
+    <div class="kpi n"><div class="kl">Margem</div><div class="kv" id="dre-k-margem">—</div></div>
+  </div>
+
+  <!-- DRE Table -->
+  <div class="card" style="padding:0;overflow:hidden">
+    <div style="display:grid;grid-template-columns:1fr 130px 130px 90px;padding:.65rem 1.25rem;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-family:'DM Mono',monospace">
+      <span>Conta / Categoria</span><span style="text-align:right">Realizado</span><span style="text-align:right">% Receita</span><span style="text-align:right">Var. mês</span>
+    </div>
+    <div id="dre-body" style="padding:.5rem .75rem"></div>
+  </div>
+</div>
+
+<!-- ===== FLUXO DE CAIXA ===== -->
+<div id="sec-fluxo" class="sec">
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:.25rem">
+    <div>
+      <p class="stitle">Fluxo de Caixa</p>
+      <p class="ssub" style="margin:0">Entradas, saídas e saldo acumulado</p>
+    </div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <div style="display:flex;gap:4px;background:var(--bg3);border-radius:9px;padding:3px;border:1px solid var(--border)">
+        <button class="pfbtn on" id="fluxo-tab-mensal" onclick="setFluxoView('mensal',this)">Mensal</button>
+        <button class="pfbtn" id="fluxo-tab-diario" onclick="setFluxoView('diario',this)">Diário</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- KPIs -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1rem">
+    <div class="kpi g"><div class="kl">Entradas</div><div class="kv gc" id="fc-k-ent">—</div><div class="ks" id="fc-k-ent-s">Período</div></div>
+    <div class="kpi r"><div class="kl">Saídas</div><div class="kv rc" id="fc-k-sai">—</div><div class="ks" id="fc-k-sai-s">Período</div></div>
+    <div class="kpi b"><div class="kl">Saldo do período</div><div class="kv" id="fc-k-sal">—</div></div>
+    <div class="kpi y"><div class="kl">Saldo acumulado</div><div class="kv yc" id="fc-k-acum">—</div><div class="ks">Histórico total</div></div>
+  </div>
+
+  <!-- Chart -->
+  <div class="card" style="margin-bottom:1rem">
+    <div class="card-title">Evolução do saldo</div>
+    <div style="position:relative;height:220px"><canvas id="ch-fluxo"></canvas></div>
+  </div>
+
+  <!-- Table -->
+  <div class="card" style="padding:0;overflow:hidden">
+    <div id="fc-header" style="display:grid;grid-template-columns:140px 1fr 130px 130px 130px;padding:.65rem 1.25rem;border-bottom:1px solid var(--border);font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);font-family:'DM Mono',monospace">
+      <span>Período</span><span>Volume</span><span style="text-align:right">Entradas</span><span style="text-align:right">Saídas</span><span style="text-align:right">Saldo</span>
+    </div>
+    <div id="fc-rows"></div>
+    <div id="fc-empty" class="empty-state" style="display:none;padding:2.5rem;text-align:center;color:var(--muted);font-size:13px">
+      Nenhum lançamento encontrado no período.<br>Adicione receitas e despesas na aba <strong>✎ Lançamentos</strong>.
+    </div>
+  </div>
+</div>
+
 </div><!-- /main -->
 <div class="footer">Odysseus · Gestão Financeira Pessoal · IndexedDB</div>
 
@@ -1136,6 +1212,27 @@ jan    | 2026 | 2026-01-10 | padaria         | alimentação        | cafeterias
   </div>
 </div>
 
+<!-- MODAL: Configurar DRE -->
+<div class="moverlay" id="m-dre-config">
+  <div class="mdialog" style="max-width:620px">
+    <div class="mhdr">
+      <h3>Configurar DRE</h3>
+      <button class="mclose" onclick="closeM('m-dre-config')">×</button>
+    </div>
+    <div class="mbody">
+      <div class="ins info" style="margin-bottom:1rem">
+        <span class="ico">ℹ</span>
+        <span class="msg">Defina o nome de cada bloco, quais categorias pertencem a cada um e quais ficam ocultas na DRE.</span>
+      </div>
+      <div id="dre-config-body"></div>
+    </div>
+    <div class="mfoot">
+      <button class="btn btn-g" onclick="closeM('m-dre-config')">Cancelar</button>
+      <button class="btn btn-p" onclick="saveDREConfig()">Salvar configuração</button>
+    </div>
+  </div>
+</div>
+
 <!-- ===== MODAIS ===== -->
 
 <!-- Orçamentos -->
@@ -1247,11 +1344,17 @@ const DEFAULT_STATE={
     {id:11,nome:'Renda',            cor:'#22c55e', tipo:'rec'},
     {id:12,nome:'Transferências',   cor:'#94a3b8', tipo:'ambos'},
   ], catSeq:13,
-  ofxEntries:[],ofxSeq:1
+  ofxEntries:[],ofxSeq:1,
+  dreConfig:{
+    blocos:[
+      {id:'rec',  label:'Receitas',              tipo:'rec',  ocultas:[]},
+      {id:'desp', label:'Despesas Operacionais',  tipo:'desp', ocultas:[]}
+    ]
+  }
 };
 function openDB(){return new Promise((res,rej)=>{if(_db){res(_db);return;}const r=indexedDB.open(DB_NAME,DB_VERSION);r.onupgradeneeded=e=>{if(!e.target.result.objectStoreNames.contains(STORE))e.target.result.createObjectStore(STORE);};r.onsuccess=e=>{_db=e.target.result;res(_db);};r.onerror=e=>rej(e.target.error);});}
 async function loadState(){try{const db=await openDB();const r=await new Promise((ok,err)=>{const q=db.transaction(STORE,'readonly').objectStore(STORE).get(STATE_KEY);q.onsuccess=()=>ok(q.result);q.onerror=()=>err(q.error);});return r||JSON.parse(JSON.stringify(DEFAULT_STATE));}catch(e){return JSON.parse(JSON.stringify(DEFAULT_STATE));}}
-async function saveState(){try{const db=await openDB();await new Promise((ok,err)=>{const r=db.transaction(STORE,'readwrite').objectStore(STORE).put({budgets,metas,metaSeq,trxExtra,trxSeq,investimentos,invSeq,cats,catSeq,ofxEntries,ofxSeq,importedRaw,dataSource},STATE_KEY);r.onsuccess=ok;r.onerror=()=>err(r.error);});showSaved();}catch(e){console.warn('IDB save error',e);}}
+async function saveState(){try{const db=await openDB();await new Promise((ok,err)=>{const r=db.transaction(STORE,'readwrite').objectStore(STORE).put({budgets,metas,metaSeq,trxExtra,trxSeq,investimentos,invSeq,cats,catSeq,ofxEntries,ofxSeq,dreConfig,importedRaw,dataSource},STATE_KEY);r.onsuccess=ok;r.onerror=()=>err(r.error);});showSaved();}catch(e){console.warn('IDB save error',e);}}
 function showSaved(){const el=document.getElementById('save-ind');if(!el)return;el.textContent='✓ Salvo';el.style.opacity='1';clearTimeout(el._t);el._t=setTimeout(()=>{el.style.opacity='0';},2500);}
 function exportJSON(){const b=new Blob([JSON.stringify({budgets,metas,trxExtra,investimentos,importedRaw,dataSource,at:new Date().toISOString()},null,2)],{type:'application/json'});const a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='odysseus_backup_'+new Date().toISOString().slice(0,10)+'.json';a.click();}
 function importJSON(e){const f=e.target.files[0];if(!f)return;const r=new FileReader();r.onload=async ev=>{try{const d=JSON.parse(ev.target.result);if(d.budgets)budgets=d.budgets;if(d.metas){metas=d.metas;metaSeq=Math.max(...metas.map(m=>m.id),0)+1;}if(d.trxExtra)trxExtra=d.trxExtra;if(d.investimentos){investimentos=d.investimentos;invSeq=Math.max(...investimentos.map(x=>x.id),0)+1;}if(d.cats){cats=d.cats;catSeq=Math.max(...cats.map(x=>x.id),0)+1;}if(d.ofxEntries){ofxEntries=d.ofxEntries;ofxSeq=Math.max(...ofxEntries.map(x=>x.id),0)+1;}if(d.importedRaw){importedRaw=d.importedRaw;dataSource=d.dataSource||'xlsx';}await saveState();initRAWWithExtras();renderSec(document.querySelector('.sec.on').id.replace('sec-',''));alert('Backup importado com sucesso!');}catch(err){alert('Erro: arquivo inválido.');}};r.readAsText(f);e.target.value='';}
@@ -1268,6 +1371,7 @@ let trxExtra=_s_init.trxExtra,trxSeq=_s_init.trxSeq;
 let investimentos=[],invSeq=1;
 let cats=_s_init.cats,catSeq=_s_init.catSeq||13;
 let ofxEntries=_s_init.ofxEntries||[],ofxSeq=_s_init.ofxSeq||1;
+let dreConfig=_s_init.dreConfig||JSON.parse(JSON.stringify(DEFAULT_STATE.dreConfig));
 let importedRaw=null,dataSource='sample';
 const charts={};
 let RAW=[],MESES=[],LABELS=[];
@@ -1423,6 +1527,8 @@ function renderSec(id){
   else if(id==='kpis')renderKPIs();
   else if(id==='lanc')renderLanc();
   else if(id==='inv')renderInv();
+  else if(id==='dre')renderDRE();
+  else if(id==='fluxo')renderFluxo();
 }
 
 // ============================================================
@@ -3194,6 +3300,499 @@ function updateRepPreview(){
     el.style.color = 'var(--muted2)';
   }
 }
+
+// ============================================================
+// DRE — DEMONSTRAÇÃO DO RESULTADO
+// ============================================================
+
+let _dreExpanded = {}; // { 'rec': true, 'desp': true }
+
+function getDREData(){
+  // Use getMeses() so it respects the period filter
+  const rows = getMeses();
+  const rec = {}, desp = {};
+  let totalRec = 0, totalDesp = 0;
+
+  rows.forEach(row => {
+    // Receitas from row.r (already aggregated)
+    // But we want breakdown by category too — use row.trx
+    (row.trx || []).forEach(t => {
+      if(t.v > 0){
+        // Receita
+        const cat = t.c || 'Outros';
+        rec[cat] = (rec[cat] || 0) + t.v;
+        totalRec += t.v;
+      } else if(t.v < 0){
+        // Despesa
+        const cat = t.c || 'Outros';
+        desp[cat] = (desp[cat] || 0) + Math.abs(t.v);
+        totalDesp += Math.abs(t.v);
+      }
+    });
+  });
+
+  const resultado = totalRec - totalDesp;
+  const margem   = totalRec > 0 ? (resultado / totalRec * 100) : 0;
+  return { rec, desp, totalRec, totalDesp, resultado, margem };
+}
+
+// Get previous period data for variance
+function getDREDataPrev(){
+  const rows = RAW;
+  if(!rows.length) return { rec:{}, desp:{}, totalRec:0, totalDesp:0 };
+  const curRows = getMeses();
+  const curKeys = new Set(curRows.map(r=>r.m));
+  // Get month before the first in current period
+  const allKeys = rows.map(r=>r.m).sort();
+  const prevRows = rows.filter(r=>!curKeys.has(r.m)).slice(-curRows.length);
+  const rec = {}, desp = {};
+  let totalRec = 0, totalDesp = 0;
+  prevRows.forEach(row => {
+    (row.trx || []).forEach(t => {
+      if(t.v > 0){ const cat=t.c||'Outros'; rec[cat]=(rec[cat]||0)+t.v; totalRec+=t.v; }
+      else if(t.v < 0){ const cat=t.c||'Outros'; desp[cat]=(desp[cat]||0)+Math.abs(t.v); totalDesp+=Math.abs(t.v); }
+    });
+  });
+  return { rec, desp, totalRec, totalDesp };
+}
+
+function renderDRE(){
+  const rows = getMeses();
+  if(!rows.length){
+    document.getElementById('dre-period-label').textContent = 'Sem dados no período';
+    document.getElementById('dre-body').innerHTML = '<div style="padding:2.5rem;text-align:center;color:var(--muted);font-size:13px">Nenhum dado no período selecionado.</div>';
+    ['dre-k-rec','dre-k-desp','dre-k-res','dre-k-margem'].forEach(id=>{ document.getElementById(id).textContent='—'; });
+    return;
+  }
+
+  const n = rows.length;
+  const first = rows[0].l, last = rows[n-1].l;
+  document.getElementById('dre-period-label').textContent = n===1 ? first : `${first} – ${last}`;
+
+  const d    = getDREData();
+  const prev = getDREDataPrev();
+  const rv   = d.totalRec || 1;
+
+  // KPIs
+  document.getElementById('dre-k-rec').textContent   = brl(d.totalRec);
+  document.getElementById('dre-k-desp').textContent  = brl(d.totalDesp);
+  const resEl = document.getElementById('dre-k-res');
+  resEl.textContent  = (d.resultado>=0?'+':'')+brl(d.resultado);
+  resEl.className    = 'kv '+(d.resultado>=0?'gc':'rc');
+  const mEl = document.getElementById('dre-k-margem');
+  mEl.textContent    = pct(d.margem);
+  mEl.className      = 'kv '+(d.margem>=20?'gc':d.margem>=0?'yc':'rc');
+
+  let html = '';
+  const colStyle = 'display:grid;grid-template-columns:1fr 130px 130px 90px';
+
+  // ── Render blocos from dreConfig ─────────────────────────
+  const catTipos = {};
+  cats.forEach(ct=>{ catTipos[ct.nome]=ct.tipo; });
+
+  let runningTotal = 0; // for computing resultado progressively
+
+  dreConfig.blocos.forEach(bloco => {
+    const isRec  = bloco.tipo === 'rec';
+    const bgrBg  = isRec ? 'rgba(34,197,94,.06)' : 'rgba(239,68,68,.06)';
+    const bgrCol = isRec ? '#22c55e' : '#ef4444';
+    const sign   = isRec ? '+' : '-';
+
+    // Determine which cats belong to this bloco
+    const allData = {...d.rec, ...d.desp};
+    const allPrev = {...prev.rec, ...prev.desp};
+
+    // A cat belongs here if:
+    // 1. Explicitly assigned via bloco.cats, OR
+    // 2. No explicit assignment exists and natural tipo matches bloco.tipo
+    const getCatBloco = (cat) => {
+      for(const b of dreConfig.blocos){
+        if(b.cats && b.cats.includes(cat)) return b.id;
+      }
+      // Natural assignment
+      const tipo = catTipos[cat];
+      return tipo === 'rec' ? 'rec' : 'desp';
+    };
+
+    const hiddenSet = new Set(bloco.ocultas || []);
+    const blocoData = isRec ? d.rec : d.desp;
+
+    // Filter cats for this bloco (by config or natural tipo), excluding hidden
+    const cats4Bloco = Object.keys(allData).filter(cat => {
+      const natural = isRec
+        ? Object.keys(d.rec).includes(cat)
+        : Object.keys(d.desp).includes(cat);
+      const assigned = getCatBloco(cat) === bloco.id;
+      return assigned || (!dreConfig.blocos.some(b=>b.cats&&b.cats.includes(cat)) && natural);
+    });
+
+    const visibleCats = cats4Bloco.filter(cat => !hiddenSet.has(cat));
+    const blocoTotal  = visibleCats.reduce((s,cat)=>s+(allData[cat]||0),0);
+    const prevBlocoTotal = visibleCats.reduce((s,cat)=>s+(allPrev[cat]||0),0);
+
+    if(isRec) runningTotal += blocoTotal;
+    else runningTotal -= blocoTotal;
+
+    const bExp = _dreExpanded[bloco.id] !== false;
+    html += `
+      <div style="${colStyle};padding:.75rem 1rem;cursor:pointer;border-radius:8px;background:${bgrBg};margin-bottom:2px;margin-top:.35rem" onclick="toggleDRESec('${bloco.id}')">
+        <span style="font-weight:600;color:var(--text);font-size:13px">
+          <span style="font-size:11px;color:var(--muted);margin-right:6px">${bExp?'▾':'▸'}</span>
+          (${sign}) ${bloco.label}
+          ${hiddenSet.size?`<span style="font-size:10px;color:var(--muted);margin-left:6px">${hiddenSet.size} oculta(s)</span>`:''}
+        </span>
+        <span style="text-align:right;font-family:'DM Mono',monospace;font-weight:600;color:${bgrCol}">${sign}${brl(blocoTotal)}</span>
+        <span style="text-align:right;font-family:'DM Mono',monospace;font-size:12px;color:var(--muted)">${pct(blocoTotal/rv*100)}</span>
+        <span style="text-align:right;font-family:'DM Mono',monospace;font-size:11px;color:var(--muted)">${prevBlocoTotal>0?varBadge(blocoTotal,prevBlocoTotal,!isRec):'—'}</span>
+      </div>`;
+
+    if(bExp){
+      const sorted = visibleCats.sort((a,b)=>(allData[b]||0)-(allData[a]||0));
+      sorted.forEach(cat=>{
+        const val = allData[cat]||0;
+        const pv  = allPrev[cat]||0;
+        html += `
+          <div style="${colStyle};padding:.5rem 1rem .5rem 2.5rem;border-radius:6px" class="dre-item">
+            <span style="font-size:13px;color:var(--muted2)">${cat}</span>
+            <span style="text-align:right;font-family:'DM Mono',monospace;font-size:13px;color:${bgrCol}">${sign}${brl(val)}</span>
+            <span style="text-align:right;font-family:'DM Mono',monospace;font-size:12px;color:var(--muted)">${pct(val/rv*100)}</span>
+            <span style="text-align:right;font-family:'DM Mono',monospace;font-size:11px">${pv>0?varBadge(val,pv,!isRec):'—'}</span>
+          </div>`;
+      });
+      if(!sorted.length) html += `<div style="padding:.5rem 1rem .5rem 2.5rem;font-size:12px;color:var(--muted)">Nenhum lançamento neste bloco</div>`;
+    }
+
+    // Subtotal after each bloco
+    html += subtotalRow(`( = ) ${isRec?'Total '+bloco.label:'Após '+bloco.label}`, isRec?blocoTotal:runningTotal, isRec?'100%':pct(runningTotal/rv*100), isRec);
+  });
+
+  // ── Resultado Final ───────────────────────────────────────
+  const surplus = d.resultado >= 0;
+  html += `
+    <div style="${colStyle};padding:1rem;margin-top:.5rem;border-top:2px solid var(--border2);border-radius:0 0 10px 10px">
+      <span style="font-weight:700;font-size:14px;color:var(--text)">( = ) ${surplus?'Resultado Positivo':'Resultado Negativo'}</span>
+      <span style="text-align:right;font-family:'DM Mono',monospace;font-weight:700;font-size:14px;color:${surplus?'#22c55e':'#ef4444'}">${surplus?'+':''}${brl(d.resultado)}</span>
+      <span style="text-align:right;font-family:'DM Mono',monospace;font-size:13px;color:${surplus?'#22c55e':'#ef4444'}">${pct(d.margem)}</span>
+      <span style="text-align:right;font-family:'DM Mono',monospace;font-size:11px">${prev.totalRec>0?varBadge(d.resultado,prev.totalRec-prev.totalDesp):'—'}</span>
+    </div>`;
+
+  document.getElementById('dre-body').innerHTML = html;
+
+  // Add hover style via JS
+  document.querySelectorAll('.dre-item').forEach(el=>{
+    el.addEventListener('mouseenter',()=>el.style.background='rgba(255,255,255,.025)');
+    el.addEventListener('mouseleave',()=>el.style.background='');
+  });
+}
+
+function subtotalRow(label, val, pctStr, isRec){
+  const col = isRec ? '#22c55e' : (val>=0?'#22c55e':'#ef4444');
+  return `<div style="display:grid;grid-template-columns:1fr 130px 130px 90px;padding:.65rem 1rem;background:rgba(255,255,255,.03);border-radius:6px;margin-top:2px">
+    <span style="font-weight:600;font-size:13px;color:var(--text)">${label}</span>
+    <span style="text-align:right;font-family:'DM Mono',monospace;font-weight:600;color:${col}">${isRec?'+':''}${brl(val)}</span>
+    <span style="text-align:right;font-family:'DM Mono',monospace;font-size:12px;color:var(--muted)">${pctStr}</span>
+    <span></span>
+  </div>`;
+}
+
+function varBadge(cur, prev, invertColors=false){
+  if(!prev) return '—';
+  const diff = ((cur - prev) / Math.abs(prev)) * 100;
+  const up = diff >= 0;
+  const good = invertColors ? !up : up; // for despesas, going up is bad
+  const col = good ? '#22c55e' : '#ef4444';
+  const arrow = up ? '▲' : '▼';
+  return `<span style="color:${col};font-size:11px">${arrow}${Math.abs(diff).toFixed(1)}%</span>`;
+}
+
+function toggleDRESec(key){
+  _dreExpanded[key] = _dreExpanded[key] === false ? true : false;
+  renderDRE();
+}
+
+function toggleDREAll(expand){
+  _dreExpanded = { rec: expand, desp: expand };
+  renderDRE();
+}
+
+function exportDRECSV(){
+  const d = getDREData();
+  let csv = 'Tipo,Categoria,Valor,% Receita\n';
+  Object.entries(d.rec).forEach(([cat,val])=>{
+    csv += `Receita,${cat},${val.toFixed(2)},${(val/d.totalRec*100).toFixed(1)}%\n`;
+  });
+  csv += `Receita Total,,${d.totalRec.toFixed(2)},100%\n`;
+  Object.entries(d.desp).forEach(([cat,val])=>{
+    csv += `Despesa,${cat},${val.toFixed(2)},${(val/(d.totalRec||1)*100).toFixed(1)}%\n`;
+  });
+  csv += `Despesa Total,,${d.totalDesp.toFixed(2)},${(d.totalDesp/(d.totalRec||1)*100).toFixed(1)}%\n`;
+  csv += `Resultado,,${d.resultado.toFixed(2)},${d.margem.toFixed(1)}%\n`;
+  const a = document.createElement('a');
+  a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent(csv);
+  a.download = 'DRE_Odysseus.csv';
+  a.click();
+}
+
+// ============================================================
+// FLUXO DE CAIXA
+// ============================================================
+
+let _fluxoView = 'mensal';
+let _fluxoChart = null;
+
+function setFluxoView(view, btn){
+  _fluxoView = view;
+  document.querySelectorAll('#fluxo-tab-mensal,#fluxo-tab-diario').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  renderFluxo();
+}
+
+function getFluxoRows(){
+  // All lançamentos across history for cumulative, filter by view
+  const all = [...RAW].sort((a,b)=>a.m.localeCompare(b.m));
+
+  if(_fluxoView === 'mensal'){
+    return all.map(row => ({
+      label: row.l,
+      ent:   row.r,
+      sai:   row.d,
+      sal:   row.r - row.d
+    }));
+  } else {
+    // Daily — use trxExtra directly (has .data field)
+    const rows = getMeses();
+    const mKeys = new Set(rows.map(r=>r.m));
+    const dayMap = {};
+    trxExtra.filter(t=>t.active!==false&&mKeys.has(t.mKey)).forEach(t=>{
+      const d = t.data;
+      if(!dayMap[d]) dayMap[d] = { ent:0, sai:0 };
+      if(t.tipo==='rec') dayMap[d].ent += t.valor;
+      else dayMap[d].sai += t.valor;
+    });
+    // Also include importedRaw trx (approximated by month)
+    rows.forEach(row=>{
+      (row.trx||[]).filter(t=>!t.manual).forEach(t=>{
+        const d = row.m + '-15'; // mid-month approximation
+        if(!dayMap[d]) dayMap[d] = { ent:0, sai:0 };
+        if(t.v>0) dayMap[d].ent += t.v;
+        else dayMap[d].sai += Math.abs(t.v);
+      });
+    });
+    return Object.entries(dayMap).sort((a,b)=>a[0].localeCompare(b[0])).map(([d,v])=>({
+      label: d.split('-').reverse().join('/'),
+      ent: v.ent, sai: v.sai, sal: v.ent - v.sai
+    }));
+  }
+}
+
+function renderFluxo(){
+  const rows = getFluxoRows();
+  const curRows = _fluxoView === 'mensal' ? rows : rows; // same for now
+
+  // KPIs
+  const totEnt = rows.reduce((s,r)=>s+r.ent,0);
+  const totSai = rows.reduce((s,r)=>s+r.sai,0);
+  const sal    = totEnt - totSai;
+
+  // Cumulative (full history)
+  const allEnt = RAW.reduce((s,r)=>s+r.r,0);
+  const allSai = RAW.reduce((s,r)=>s+r.d,0);
+  const acum   = allEnt - allSai;
+
+  document.getElementById('fc-k-ent').textContent  = brl(totEnt);
+  document.getElementById('fc-k-sai').textContent  = brl(totSai);
+  const salEl = document.getElementById('fc-k-sal');
+  salEl.textContent = (sal>=0?'+':'')+brl(sal);
+  salEl.className   = 'kv '+(sal>=0?'gc':'rc');
+  document.getElementById('fc-k-acum').textContent = (acum>=0?'+':'')+brl(acum);
+  document.getElementById('fc-k-acum').className   = 'kv '+(acum>=0?'yc':'rc');
+
+  const n = rows.length;
+  const periodRows = getMeses();
+  document.getElementById('fc-k-ent-s').textContent = n === 1 ? rows[0].label : `${n} períodos`;
+  document.getElementById('fc-k-sai-s').textContent = n === 1 ? rows[0].label : `${n} períodos`;
+
+  // Chart
+  if(_fluxoChart){ _fluxoChart.destroy(); _fluxoChart=null; }
+  if(rows.length){
+    let cumul = 0;
+    const cumulData = rows.map(r=>{ cumul+=r.sal; return cumul; });
+    const ctx = document.getElementById('ch-fluxo').getContext('2d');
+    _fluxoChart = new Chart(ctx, {
+      data: {
+        labels: rows.map(r=>r.label),
+        datasets: [
+          { type:'bar',  label:'Entradas', data:rows.map(r=>r.ent), backgroundColor:'rgba(34,197,94,.6)', borderRadius:4 },
+          { type:'bar',  label:'Saídas',   data:rows.map(r=>r.sai), backgroundColor:'rgba(239,68,68,.6)',  borderRadius:4 },
+          { type:'line', label:'Saldo Acum.', data:cumulData, borderColor:'#f59e0b', backgroundColor:'rgba(245,158,11,.08)',
+            fill:true, tension:.3, pointRadius:3, pointBackgroundColor:'#f59e0b', yAxisID:'y2' }
+        ]
+      },
+      options:{
+        responsive:true, maintainAspectRatio:false,
+        plugins:{ legend:{ labels:{ color:'#9aa5bf', boxWidth:10, font:{size:11} } } },
+        scales:{
+          x:{ ticks:{color:'#6b7a99'}, grid:{color:'rgba(255,255,255,.04)'} },
+          y:{ ticks:{color:'#6b7a99', callback:v=>brlk(v)}, grid:{color:'rgba(255,255,255,.04)'} },
+          y2:{ position:'right', ticks:{color:'#f59e0b', callback:v=>brlk(v)}, grid:{display:false} }
+        }
+      }
+    });
+  }
+
+  // Rows table
+  const empty = document.getElementById('fc-empty');
+  const rowsEl = document.getElementById('fc-rows');
+
+  if(!rows.length){ rowsEl.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+
+  const maxVal = Math.max(...rows.map(r=>Math.max(r.ent,r.sai)), 1);
+  let cumul = 0;
+  rowsEl.innerHTML = rows.map(r=>{
+    cumul += r.sal;
+    const entW = Math.round(r.ent/maxVal*100);
+    const saiW = Math.round(r.sai/maxVal*100);
+    const salColor = r.sal>=0?'#22c55e':'#ef4444';
+    return `<div style="display:grid;grid-template-columns:140px 1fr 130px 130px 130px;align-items:center;padding:.75rem 1.25rem;border-bottom:1px solid rgba(255,255,255,.04)">
+      <span style="font-family:'DM Mono',monospace;font-size:12px;color:var(--muted2)">${r.label}</span>
+      <div style="display:flex;gap:5px;align-items:center;padding:0 12px">
+        <div style="flex:1;height:5px;background:var(--bg3);border-radius:3px;overflow:hidden">
+          <div style="height:100%;width:${entW}%;background:#22c55e;border-radius:3px"></div>
+        </div>
+        <div style="flex:1;height:5px;background:var(--bg3);border-radius:3px;overflow:hidden">
+          <div style="height:100%;width:${saiW}%;background:#ef4444;border-radius:3px"></div>
+        </div>
+      </div>
+      <span style="text-align:right;color:#22c55e;font-family:'DM Mono',monospace;font-size:13px">+${brl(r.ent)}</span>
+      <span style="text-align:right;color:#ef4444;font-family:'DM Mono',monospace;font-size:13px">-${brl(r.sai)}</span>
+      <span style="text-align:right;color:${salColor};font-family:'DM Mono',monospace;font-size:13px;font-weight:600">${r.sal>=0?'+':''}${brl(r.sal)}</span>
+    </div>`;
+  }).join('');
+}
+
+
+// ============================================================
+// DRE CONFIG
+// ============================================================
+
+function openDREConfig(){
+  renderDREConfigModal();
+  openM('m-dre-config');
+}
+
+function renderDREConfigModal(){
+  // All categories used in lançamentos
+  const usedCats = [...new Set(
+    [...cats.map(x=>x.nome),
+     ...Object.keys(getDREData().rec),
+     ...Object.keys(getDREData().desp)]
+  )].sort();
+
+  let html = '';
+  dreConfig.blocos.forEach((bloco, bi) => {
+    // Which cats are assigned to this bloco
+    const assigned = usedCats.filter(cat => {
+      // Find which bloco this cat belongs to
+      const found = dreConfig.blocos.find(b => b.cats && b.cats.includes(cat));
+      return found ? found.id === bloco.id : false;
+    });
+
+    // Unassigned cats (not in any bloco) default to their natural tipo
+    const catTipos = {};
+    cats.forEach(c => { catTipos[c.nome] = c.tipo; });
+
+    // For display: cats "belonging" to this bloco by config OR by natural tipo if not overridden
+    const naturalCats = usedCats.filter(cat => {
+      const inAny = dreConfig.blocos.some(b => b.cats && b.cats.includes(cat));
+      if(inAny) return dreConfig.blocos.find(b=>b.cats&&b.cats.includes(cat))?.id===bloco.id;
+      // Natural assignment
+      const tipo = catTipos[cat];
+      return bloco.id === 'rec' ? tipo === 'rec' : tipo !== 'rec';
+    });
+
+    const hidden = bloco.ocultas || [];
+
+    html += `
+      <div style="background:var(--bg3);border:1px solid var(--border);border-radius:12px;padding:1rem 1.25rem;margin-bottom:1rem">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.75rem;gap:10px">
+          <div class="field" style="margin:0;flex:1">
+            <label>Nome do bloco</label>
+            <input type="text" id="dre-bloco-label-${bi}" value="${bloco.label}"
+              style="background:var(--bg2);border:1px solid var(--border2);border-radius:8px;padding:7px 11px;color:var(--text);font-size:13px;width:100%;outline:none">
+          </div>
+          <div class="field" style="margin:0;width:140px">
+            <label>Tipo padrão</label>
+            <select id="dre-bloco-tipo-${bi}"
+              style="background:var(--bg2);border:1px solid var(--border2);border-radius:8px;padding:7px 11px;color:var(--text);font-size:13px;width:100%;outline:none">
+              <option value="rec"  ${bloco.tipo==='rec' ?'selected':''}>Receita</option>
+              <option value="desp" ${bloco.tipo==='desp'?'selected':''}>Despesa</option>
+            </select>
+          </div>
+        </div>
+
+        <p style="font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:.5rem">Categorias neste bloco</p>
+        <div style="display:flex;flex-direction:column;gap:4px">
+          ${usedCats.map(cat => {
+            const isHere = naturalCats.includes(cat);
+            const isHidden = hidden.includes(cat);
+            return `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 10px;background:var(--bg2);border-radius:8px;border:1px solid ${isHere?'var(--border2)':'transparent'}">
+              <label style="display:flex;align-items:center;gap:8px;cursor:pointer;flex:1">
+                <input type="checkbox" id="dre-cat-${bi}-${cat.replace(/\s/g,'_')}"
+                  ${isHere?'checked':''} data-bi="${bi}" data-cat="${cat}"
+                  onchange="toggleDRECatBloco(${bi},'${cat}',this.checked)"
+                  style="width:14px;height:14px;accent-color:var(--accent);cursor:pointer">
+                <span style="font-size:13px;color:${isHere?'var(--text)':'var(--muted)'}">${cat}</span>
+              </label>
+              ${isHere ? `
+                <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:12px;color:var(--muted)">
+                  <input type="checkbox" id="dre-hide-${bi}-${cat.replace(/\s/g,'_')}"
+                    ${isHidden?'checked':''} data-bi="${bi}" data-cat="${cat}"
+                    onchange="toggleDREHide(${bi},'${cat}',this.checked)"
+                    style="width:12px;height:12px;accent-color:#ef4444;cursor:pointer">
+                  Ocultar
+                </label>` : ''}
+            </div>`;
+          }).join('')}
+        </div>
+      </div>`;
+  });
+
+  document.getElementById('dre-config-body').innerHTML = html;
+}
+
+function toggleDRECatBloco(bi, cat, checked){
+  // Remove cat from all blocos first
+  dreConfig.blocos.forEach(b => {
+    if(!b.cats) b.cats = [];
+    b.cats = b.cats.filter(c => c !== cat);
+  });
+  // Add to target bloco if checked
+  if(checked){
+    if(!dreConfig.blocos[bi].cats) dreConfig.blocos[bi].cats = [];
+    dreConfig.blocos[bi].cats.push(cat);
+  }
+  // Re-render modal to reflect changes
+  renderDREConfigModal();
+}
+
+function toggleDREHide(bi, cat, hidden){
+  const bloco = dreConfig.blocos[bi];
+  if(!bloco.ocultas) bloco.ocultas = [];
+  if(hidden){ if(!bloco.ocultas.includes(cat)) bloco.ocultas.push(cat); }
+  else { bloco.ocultas = bloco.ocultas.filter(c=>c!==cat); }
+}
+
+function saveDREConfig(){
+  dreConfig.blocos.forEach((bloco, bi) => {
+    bloco.label = document.getElementById(`dre-bloco-label-${bi}`)?.value || bloco.label;
+    bloco.tipo  = document.getElementById(`dre-bloco-tipo-${bi}`)?.value  || bloco.tipo;
+  });
+  saveState();
+  closeM('m-dre-config');
+  renderDRE();
+}
+
 // ============================================================
 // CLOSE MODALS ON OVERLAY CLICK
 // ============================================================
@@ -3215,6 +3814,7 @@ document.querySelectorAll('.moverlay').forEach(o=>o.addEventListener('click',fun
   catSeq      =saved.catSeq      ||DEFAULT_STATE.catSeq||13;
   ofxEntries  =saved.ofxEntries  ||[];
   ofxSeq      =saved.ofxSeq      ||1;
+  dreConfig   =saved.dreConfig   ||JSON.parse(JSON.stringify(DEFAULT_STATE.dreConfig));
   importedRaw =saved.importedRaw ||null;
   dataSource =saved.dataSource ||'sample';
   initRAWWithExtras();
